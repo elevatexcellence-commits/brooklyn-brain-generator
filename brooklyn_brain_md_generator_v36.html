@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brooklyn Brain · MD Generator v35</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+:root{
+  --y:#FFD600;--yd:#B39500;--bg:#0A0A0A;--s1:#111;--s2:#181818;--s3:#222;
+  --b1:#2A2A2A;--b2:#383838;--t1:#F0F0F0;--t2:#AAA;--t3:#555;
+  --green:#00D47E;--red:#FF4040;--orange:#FF8C00;--blue:#4A9EFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--t1);font-family:'DM Sans',sans-serif;display:flex;flex-direction:column;height:100vh}
+
+/* HEADER */
+.hdr{height:46px;background:var(--y);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.hdr-logo{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:#000;letter-spacing:.1em}
+.hdr-tag{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;background:#000;color:var(--y);padding:3px 10px;letter-spacing:.1em}
+
+/* STEP BAR */
+.sbar{display:flex;background:var(--s1);border-bottom:1px solid var(--b1);flex-shrink:0}
+.stab{display:flex;align-items:center;gap:8px;padding:0 18px;height:42px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;flex-shrink:0}
+.stab:hover:not(.locked){background:var(--s2)}
+.stab.active{border-bottom-color:var(--y);background:var(--s2)}
+.stab.done .sn{background:var(--green);color:#000}
+.stab.locked{opacity:.3;cursor:not-allowed;pointer-events:none}
+.sn{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;background:var(--s3);color:var(--t3);padding:2px 7px;min-width:24px;text-align:center;transition:all .15s}
+.stab.active .sn{background:var(--y);color:#000}
+.sl{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--t3);text-transform:uppercase}
+.stab.active .sl,.stab.done .sl{color:var(--t2)}
+.stab.active .sl{color:var(--t1)}
+
+/* SCREENS */
+.screen{flex:1;overflow:hidden;display:none;flex-direction:column}
+.screen.active{display:flex}
+.swrap{flex:1;overflow-y:auto;padding:24px 28px}
+.inner{max-width:700px;width:100%}
+.inner.wide{max-width:900px}
+
+/* TYPOGRAPHY */
+.ftitle{font-size:16px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.fsub{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:20px}
+.flabel{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--t3);text-transform:uppercase;margin-bottom:8px}
+.fsec{margin-bottom:18px}
+.fdiv{border:none;border-top:1px solid var(--b1);margin:20px 0}
+
+/* UPLOAD */
+.drop{border:1.5px dashed var(--b2);padding:24px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:var(--s1)}
+.drop:hover,.drop.drag{border-color:var(--y);background:rgba(255,214,0,.03)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-ico{font-size:26px;margin-bottom:5px}
+.drop-main{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.drop-sub{font-size:10px;color:var(--t3);font-family:'Space Mono',monospace}
+
+/* FILE PILL */
+.fpill{display:none;align-items:center;gap:10px;padding:10px 13px;background:var(--s2);border:1px solid var(--b1);border-left:3px solid var(--green)}
+.fpill.on{display:flex}
+.fpi{font-size:18px;flex-shrink:0}
+.fpinfo{flex:1;min-width:0}
+.fpn{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fps{font-size:9px;color:var(--t3);font-family:'Space Mono',monospace;margin-top:1px}
+.fprm{cursor:pointer;color:var(--t3);font-size:18px;padding:0 4px;line-height:1;flex-shrink:0}
+.fprm:hover{color:var(--red)}
+
+/* GRIDS */
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tbtn{padding:11px 13px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;transition:all .15s;text-align:left}
+.tbtn:hover{border-color:var(--b2);background:var(--s3)}
+.tbtn.sel{border-color:var(--y);background:rgba(255,214,0,.05)}
+.tc{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--t3);margin-bottom:2px;transition:color .15s}
+.td{font-size:10px;color:var(--t2)}
+.tbtn.sel .tc{color:var(--y)}
+
+.cgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.cbtn{padding:9px 10px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;text-align:center;transition:all .15s}
+.cbtn:hover{border-color:var(--b2);background:var(--s3)}
+.cbtn.sel{border-color:var(--y);background:rgba(255,214,0,.05)}
+.cv{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--t3);transition:color .15s;margin-bottom:2px}
+.cdesc{font-size:9px;color:var(--t3)}
+.cbtn.sel .cv{color:var(--y)}
+
+/* TITLE ROW */
+.trow{display:flex}
+.tpfx{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--y);background:var(--s3);border:1px solid var(--b1);border-right:none;padding:9px 10px;white-space:nowrap;flex-shrink:0}
+.tinp{flex:1;background:var(--s2);border:1px solid var(--b1);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:9px 10px;outline:none;transition:border-color .15s;min-width:0}
+.tinp:focus{border-color:var(--y)}
+.tinp::placeholder{color:var(--t3)}
+.fprev{font-family:'Space Mono',monospace;font-size:9px;color:var(--yd);padding:4px 8px;background:#0E0C00;border-left:2px solid var(--yd);display:none;word-break:break-all;margin-top:3px}
+.fprev.on{display:block}
+
+/* INPUTS */
+.binp{width:100%;background:var(--s2);border:1px solid var(--b1);color:var(--t1);font-family:'Space Mono',monospace;font-size:10px;padding:9px 10px;outline:none;transition:border-color .15s}
+.binp:focus{border-color:var(--y)}
+.binp::placeholder{color:var(--t3)}
+.bsel{width:100%;background:var(--s2);border:1px solid var(--b1);color:var(--t1);font-family:'Space Mono',monospace;font-size:10px;padding:9px 28px 9px 10px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color .15s}
+.bsel:focus{border-color:var(--y)}
+
+/* IMG CARD */
+.icard{padding:12px 13px;background:var(--s2);border:1px solid var(--b1);display:flex;flex-direction:column;gap:7px}
+.ictop{display:flex;align-items:center;gap:10px}
+.icthumb{width:38px;height:38px;background:var(--s3);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.icmeta{flex:1;min-width:0}
+.icid{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--y)}
+.icctx{font-size:10px;color:var(--t2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icst{font-family:'Space Mono',monospace;font-size:8px;padding:2px 7px;border:1px solid var(--orange);color:var(--orange);flex-shrink:0;transition:all .2s}
+.icst.ok{border-color:var(--green);color:var(--green)}
+.icst.err{border-color:var(--red);color:var(--red)}
+.icst.skip{border-color:var(--t3);color:var(--t3);background:transparent}
+.icard.skipped{opacity:.45;position:relative}
+.icard.skipped .icthumb{filter:grayscale(1)}
+.icard.skipped .icid,.icard.skipped .icctx{text-decoration:line-through;text-decoration-color:var(--t3)}
+.icard.skipped .icrow,.icard.skipped .ichint{display:none !important}
+.icskip-btn{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;padding:2px 7px;margin-left:6px;background:transparent;border:1px solid var(--b2);color:var(--t3);cursor:pointer;transition:all .15s;letter-spacing:.06em}
+.icskip-btn:hover{border-color:var(--red);color:var(--red)}
+.icard.skipped .icskip-btn{border-color:var(--y);color:var(--y)}
+.icard.skipped .icskip-btn:hover{border-color:var(--y);color:var(--y);background:rgba(255,214,0,.07)}
+.icrow{display:flex;gap:7px}
+.icinp{flex:1;background:var(--s1);border:1px solid var(--b1);color:var(--t1);font-family:'Space Mono',monospace;font-size:10px;padding:7px 10px;outline:none;transition:border-color .15s}
+.icinp:focus{border-color:var(--y)}
+.icinp::placeholder{color:var(--t3)}
+.icapply{background:var(--y);border:none;color:#000;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;padding:7px 12px;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0}
+.icapply:hover{background:#ffe633}
+.icok{font-family:'Space Mono',monospace;font-size:9px;color:var(--green);display:none}
+.icok.on{display:block}
+.ichint{font-family:'Space Mono',monospace;font-size:9px;line-height:1.5;display:none;padding:4px 8px;border-left:2px solid;margin-top:2px}
+.ichint.on{display:block}
+.ichint.err{border-color:var(--red);background:rgba(255,64,64,.06);color:var(--red)}
+.ichint.warn{border-color:var(--orange);background:rgba(255,140,0,.06);color:var(--orange)}
+
+/* BANNER */
+.banner{padding:11px 14px;border-left:3px solid var(--y);background:rgba(255,214,0,.05);font-size:12px;color:var(--t2);line-height:1.6}
+.banner strong{color:var(--t1)}
+.banner-orange{border-color:var(--orange);background:rgba(255,140,0,.05)}
+.banner-green{border-color:var(--green);background:rgba(0,212,126,.05);color:var(--green)}
+
+/* NAV */
+.fnav{display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--b1);margin-top:20px;flex-wrap:wrap}
+.btn{padding:9px 20px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;cursor:pointer;transition:all .15s;border:none;text-transform:uppercase;flex-shrink:0}
+.btn-y{background:var(--y);color:#000}
+.btn-y:hover{background:#ffe633}
+.btn-y:disabled{opacity:.25;cursor:not-allowed}
+.btn-s{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.btn-s:hover{border-color:var(--y);color:var(--y)}
+.btn-g{background:transparent;border:1px solid var(--b1);color:var(--t3)}
+.btn-g:hover{border-color:var(--b2);color:var(--t2)}
+
+/* LOADER */
+.lscreen{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.lscreen.on{display:flex}
+.lbw{width:220px;height:2px;background:var(--b1);overflow:hidden}
+.lb{height:100%;background:var(--y);animation:lb 1.8s ease-in-out infinite}
+@keyframes lb{0%{width:0;margin-left:0}50%{width:55%;margin-left:20%}100%{width:0;margin-left:100%}}
+.ltitle{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--y);letter-spacing:.1em}
+.ltxt{font-family:'Space Mono',monospace;font-size:10px;color:var(--t3);letter-spacing:.06em}
+
+/* PROPOSAL CARDS */
+.pcard{padding:16px;border:1.5px solid var(--b1);background:var(--s2);cursor:pointer;transition:all .15s;position:relative}
+.pcard:hover{border-color:var(--b2);background:var(--s3)}
+.pcard.sel{border-color:var(--y);background:rgba(255,214,0,.04)}
+.psel{display:none;position:absolute;top:10px;right:12px;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;color:var(--y)}
+.pcard.sel .psel{display:block}
+.prec{display:inline-flex;font-family:'Space Mono',monospace;font-size:8px;font-weight:700;padding:2px 8px;margin-bottom:8px;border:1px solid;letter-spacing:.08em}
+.prec.rec{border-color:var(--green);color:var(--green);background:rgba(0,212,126,.07)}
+.prec.alt{border-color:var(--blue);color:var(--blue);background:rgba(74,158,255,.07)}
+.ptitle{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.preason{font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:8px}
+.pfiles{display:flex;flex-wrap:wrap;gap:5px}
+.pfile{font-family:'Space Mono',monospace;font-size:9px;padding:3px 8px;background:var(--s3);border:1px solid var(--b1);color:var(--t2)}
+
+/* LOCATION CARD */
+.loccard{padding:14px 16px;background:var(--s2);border:1px solid var(--b1);display:flex;flex-direction:column;gap:6px}
+.loccard-eje{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--y);letter-spacing:.1em}
+.loccard-path{font-family:'Space Mono',monospace;font-size:11px;color:var(--t1)}
+.loccard-reason{font-size:12px;color:var(--t2);line-height:1.5}
+
+/* MD OUTPUT */
+.mblock{background:var(--s2);border:1px solid var(--b1);margin-bottom:16px}
+.mbh{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--b1);background:var(--s1)}
+.mbt{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--y)}
+.mbc{font-family:'Space Mono',monospace;font-size:8px;color:var(--t3);cursor:pointer;padding:3px 10px;border:1px solid var(--b1);background:transparent;transition:all .15s}
+.mbc:hover{border-color:var(--y);color:var(--y)}
+.mbc.ok{border-color:var(--green);color:var(--green)}
+pre{font-family:'Space Mono',monospace;font-size:10px;line-height:1.8;color:#C8C8C8;white-space:pre-wrap;word-break:break-word;padding:14px;max-height:500px;overflow-y:auto}
+
+/* FOOTER */
+.mfooter{padding:10px 24px;border-top:1px solid var(--b1);display:flex;gap:8px;align-items:center;background:var(--s1);flex-shrink:0}
+.mfchars{margin-left:auto;font-family:'Space Mono',monospace;font-size:9px;color:var(--t3)}
+
+/* ERRBOX */
+.errbox{padding:14px 16px;background:rgba(255,64,64,.07);border:1px solid rgba(255,64,64,.25);border-left:3px solid var(--red);font-size:12px;color:var(--red);line-height:1.6}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:50px 20px;text-align:center;opacity:.35}
+.empty-ico{font-size:30px}
+.empty-t{font-size:13px;font-weight:700}
+.empty-s{font-family:'Space Mono',monospace;font-size:10px;color:var(--t3);line-height:1.6}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">BROOKLYN BRAIN · MD GENERATOR <span style="font-size:8px;opacity:.6">v30</span></div>
+  <div class="hdr-tag">Xcellence</div>
+</div>
+
+<div class="sbar">
+  <div class="stab active" id="stab-1" onclick="goStep(1)"><div class="sn" id="sn-1">01</div><div class="sl">Preparación</div></div>
+  <div class="stab locked" id="stab-2" onclick="goStep(2)"><div class="sn" id="sn-2">02</div><div class="sl">Ubicación</div></div>
+  <div class="stab locked" id="stab-3" onclick="goStep(3)"><div class="sn" id="sn-3">03</div><div class="sl">Plan</div></div>
+  <div class="stab locked" id="stab-4" onclick="goStep(4)"><div class="sn" id="sn-4">04</div><div class="sl">Generación</div></div>
+  <div class="stab locked" id="stab-5" onclick="goStep(5)"><div class="sn" id="sn-5">05</div><div class="sl">Resultado</div></div>
+</div>
+
+<!-- ══ STEP 1: DOCUMENTO ══ -->
+<div class="screen active" id="screen-1">
+  <div class="swrap" style="display:flex;justify-content:center">
+  <div class="inner">
+    <div class="ftitle">Sube el documento</div>
+    <div class="fsub">PDF, DOCX, TXT, MD — cualquier formato. La IA analizará el contenido y te asesorará sobre dónde ubicarlo en el Drive.</div>
+
+    <div class="fsec">
+      <div class="drop" id="drop">
+        <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt,.md,.rtf,.html" onchange="onFile(event)">
+        <div class="drop-ico">📂</div>
+        <div class="drop-main">Arrastra el archivo o haz clic</div>
+        <div class="drop-sub" style="margin-top:3px">PDF · DOCX · TXT · MD · HTML · RTF</div>
+      </div>
+      <div class="fpill" id="fpill">
+        <div class="fpi" id="fpi">📄</div>
+        <div class="fpinfo">
+          <div class="fpn" id="fpn">—</div>
+          <div class="fps" id="fps">—</div>
+        </div>
+        <div class="fprm" onclick="rmFile()">×</div>
+      </div>
+    </div>
+
+    <!-- CONTEXT MDs — manual upload for UPDATE generation -->
+    <div class="fsec">
+      <div class="flabel" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span>📋 MDs de contexto</span>
+        <span style="font-family:'DM Sans',sans-serif;font-weight:400;text-transform:none;letter-spacing:0;color:var(--t3);font-size:10px">opcional</span>
+      </div>
+      <div style="font-size:11px;color:var(--t3);line-height:1.6;margin-bottom:8px">
+        Si vas a <strong style="color:var(--t1)">actualizar un MD existente</strong>, súbelo aquí. El generador detectará el solapamiento alto y lo marcará como UPDATE en el plan en lugar de crear uno nuevo. Si solo lo subes como referencia (sin alto solapamiento), el generador evitará duplicar contenido.
+      </div>
+      <div class="drop" id="ctx-drop" style="padding:14px 18px">
+        <input type="file" id="ctx-input" accept=".md,.txt" multiple onchange="onCtxFiles(event)">
+        <div class="drop-ico" style="font-size:18px;margin-bottom:2px">📂</div>
+        <div class="drop-main" style="font-size:11px">Arrastra .md o haz clic <span style="color:var(--t3);font-weight:400">(opcional)</span></div>
+        <div class="drop-sub" style="font-size:9px;margin-top:2px">.MD · uno o varios</div>
+      </div>
+      <div id="ctx-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+    </div>
+
+    <hr class="fdiv">
+
+    <div class="fsec">
+      <div class="flabel">Tipo de documento</div>
+      <div class="tgrid">
+        <div class="tbtn" onclick="selType('CORE')" id="t-CORE"><div class="tc">CORE</div><div class="td">Documento base de conocimiento</div></div>
+        <div class="tbtn" onclick="selType('PROC')" id="t-PROC"><div class="tc">PROC</div><div class="td">Procedimiento paso a paso</div></div>
+        <div class="tbtn" onclick="selType('ATOM')" id="t-ATOM"><div class="tc">ATOM</div><div class="td">Checklist / FAQ / Formulario</div></div>
+        <div class="tbtn" onclick="selType('FUNC')" id="t-FUNC"><div class="tc">FUNC</div><div class="td">Funcionalidad de producto</div></div>
+      </div>
+    </div>
+
+    <div class="fsec">
+      <div class="flabel">Título del documento</div>
+      <div class="trow">
+        <div class="tpfx" id="pfx">???_</div>
+        <input class="tinp" id="tinp" placeholder="Nombre_Del_Documento" oninput="onTitle()">
+      </div>
+      <div class="fprev" id="fprev"></div>
+    </div>
+
+    <div class="fsec">
+      <div class="flabel">Owner / área responsable</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px" id="owner-grid">
+        <div class="cbtn" onclick="selOwner('Operations')" id="ow-Operations"><div class="cv">Operations</div></div>
+        <div class="cbtn" onclick="selOwner('Customer Experience')" id="ow-Customer Experience"><div class="cv">Customer Experience</div></div>
+        <div class="cbtn" onclick="selOwner('Fundación Brooklyn Fitboxing')" id="ow-Fundación Brooklyn Fitboxing"><div class="cv">Fundación BF</div></div>
+        <div class="cbtn" onclick="selOwner('Sales')" id="ow-Sales"><div class="cv">Sales</div></div>
+        <div class="cbtn" onclick="selOwner('Tech')" id="ow-Tech"><div class="cv">Tech</div></div>
+        <div class="cbtn" onclick="selOwner('Expansión')" id="ow-Expansión"><div class="cv">Expansión</div></div>
+        <div class="cbtn" onclick="selOwner('Finance')" id="ow-Finance"><div class="cv">Finance</div></div>
+        <div class="cbtn" onclick="selOwner('People')" id="ow-People"><div class="cv">People</div></div>
+        <div class="cbtn" onclick="selOwner('Legal')" id="ow-Legal"><div class="cv">Legal</div></div>
+        <div class="cbtn" onclick="selOwner('Innovation')" id="ow-Innovation"><div class="cv">Innovation</div></div>
+        <div class="cbtn" onclick="selOwner('Own Clubs')" id="ow-Own Clubs"><div class="cv">Own Clubs</div></div>
+        <div class="cbtn" onclick="selOwner('Management')" id="ow-Management"><div class="cv">Management</div></div>
+      </div>
+    </div>
+
+    <div class="fsec">
+      <div class="flabel">Confidencialidad</div>
+      <div style="display:flex;gap:8px;padding:8px 0">
+        <button type="button" id="conf-btn-internal" onclick="selConf('internal')"
+          style="display:flex;flex-direction:column;gap:3px;padding:10px 16px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;text-align:left;transition:all .15s;flex:1">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--t3);transition:color .15s" id="conf-lbl-internal">INTERNAL</span>
+          <span style="font-size:10px;color:var(--t3);line-height:1.4">Solo equipo interno · no visible para clubes</span>
+        </button>
+        <button type="button" id="conf-btn-both" onclick="selConf('internal/clubes')"
+          style="display:flex;flex-direction:column;gap:3px;padding:10px 16px;border:1px solid var(--b1);background:var(--s2);cursor:pointer;text-align:left;transition:all .15s;flex:1">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--t3);transition:color .15s" id="conf-lbl-both">INTERNAL / CLUBES</span>
+          <span style="font-size:10px;color:var(--t3);line-height:1.4">Visible para equipo interno y para clubes</span>
+        </button>
+      </div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t3);margin-top:2px">Valor: <span id="conf-value" style="color:var(--yd)">sin seleccionar</span></div>
+    </div>
+
+    <div class="fnav">
+      <button class="btn btn-y" id="btn1" disabled onclick="showLocationStep()">SIGUIENTE →</button>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- ══ STEP 2: UBICACIÓN Y CARPETAS DE ASSETS ══ -->
+<div class="screen" id="screen-2">
+  <div class="swrap" style="display:flex;justify-content:center">
+    <div class="inner">
+      <div class="ftitle">Ubicación en Drive y carpetas de assets</div>
+      <div class="fsub">El generador propone dónde guardar el contenido. Ahora crea las carpetas necesarias para tus imágenes.</div>
+
+      <div class="fsec">
+        <div class="flabel">📁 Ubicación propuesta</div>
+        <div class="loccard">
+          <div class="loccard-eje" id="loc-eje-s2">—</div>
+          <div class="loccard-path" id="loc-path-s2">—</div>
+          <div class="loccard-reason" id="loc-reason-s2">—</div>
+        </div>
+        <button class="btn btn-g" style="margin-top:8px;font-size:9px" onclick="toggleManualLocStep2()">CAMBIAR MANUALMENTE</button>
+        <div id="loc-manual-sec-s2" style="display:none;margin-top:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div class="cbtn" onclick="selEje2S2('NEGOCIO')" id="e2s2-NEGOCIO"><div class="cv">💼 NEGOCIO</div></div>
+            <div class="cbtn" onclick="selEje2S2('CLIENTE')" id="e2s2-CLIENTE"><div class="cv">🧍 CLIENTE</div></div>
+            <div class="cbtn" onclick="selEje2S2('OPERACIONES')" id="e2s2-OPERACIONES"><div class="cv">⚙️ OPS</div></div>
+          </div>
+          <select class="bsel" id="sub2s2" onchange="onSub2S2()"><option value="">Subcarpeta…</option></select>
+        </div>
+      </div>
+
+      <hr class="fdiv">
+
+      <div class="fsec">
+        <div class="flabel">🖼 Crear carpetas para imágenes</div>
+        <div style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:10px">
+          Si tu documento tiene imágenes, crea subcarpetas en Drive para organizarlas. Sigue esta estructura:
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--b1);padding:14px;font-family:'Space Mono',monospace;font-size:10px;color:var(--t1);line-height:2;margin-bottom:12px">
+          <div style="color:var(--y)">📁 <span id="assets-base-path">Ubicación principal</span></div>
+          <div style="margin-left:20px;color:var(--t2);">├── 📁 <strong>assets</strong></div>
+          <div style="margin-left:40px;color:var(--t2);">│   ├── 📁 <strong>images</strong></div>
+          <div style="margin-left:60px;color:var(--t3);">│   │   └── (tus fotos aquí)</div>
+          <div style="margin-left:40px;color:var(--t2);">│   └── 📁 <strong>documents</strong></div>
+          <div style="margin-left:60px;color:var(--t3);">│   └── (PDFs, docs referencia)</div>
+        </div>
+        <button class="btn btn-y" onclick="copyAssetsPaths()">📋 COPIAR ESTRUCTURA</button>
+        <div style="font-size:11px;color:var(--t3);margin-top:8px;line-height:1.6">
+          <strong>Pasos:</strong><br>
+          1. Copia la estructura con el botón<br>
+          2. Navega en Drive a: <span id="nav-path" style="color:var(--t1)">cargando…</span><br>
+          3. Crea <strong style="color:var(--t1)">assets</strong> → dentro crea <strong style="color:var(--t1)">images</strong> y <strong style="color:var(--t1)">documents</strong><br>
+          4. Sube imágenes a <strong style="color:var(--y)">assets/images</strong>
+        </div>
+      </div>
+
+      <div class="banner" style="margin-top:14px">
+        <strong>💡 Consejo:</strong> Después de crear carpetas y subir imágenes, pulsa <strong>SIGUIENTE</strong>. Te pediremos los links de Drive en el paso 3.
+      </div>
+
+      <!-- IMAGES panel — shown here once the Drive location is known -->
+      <div id="img-step2" style="display:none;margin-top:18px">
+        <hr class="fdiv">
+        <div class="fsec">
+          <div class="flabel">🖼 Imágenes detectadas</div>
+          <div class="banner banner-orange" style="margin-bottom:10px">
+            Ya conoces la ubicación en Drive. Sube las imágenes a <strong>assets/images</strong>, compártelas y pega el enlace aquí.<br>
+            Drive → clic derecho → Compartir → <strong>Cualquier persona con el enlace puede ver</strong> → Copiar enlace.
+          </div>
+          <div id="img-step2-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+
+      <div class="fnav">
+        <button class="btn btn-y" onclick="goStep(3); startPlanGeneration().catch(e=>console.error('Plan gen error:',e))">SIGUIENTE →</button>
+        <button class="btn btn-g" onclick="goStep(1)">← VOLVER</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STEP 3: PLAN DE DIVISIÓN (anterior step 2) ══ -->
+<div class="screen" id="screen-3">
+  <div class="lscreen on" id="l-plan">
+    <div class="ltitle">ANALIZANDO DOCUMENTO</div>
+    <div class="lbw"><div class="lb"></div></div>
+    <div class="ltxt" id="ltxt-plan">Generando plan de división…</div>
+    <div style="margin-top:16px;font-family:'Space Mono',monospace;font-size:10px;color:var(--t3);max-width:460px;text-align:center;line-height:1.7">
+      La IA está leyendo el documento y proponiéndote una división en MDs temáticos, optimizada para la base de conocimiento Brooklyn Brain.
+    </div>
+  </div>
+  <div class="swrap" id="c-plan" style="display:none">
+    <div class="inner wide">
+      <div class="fsec">
+        <div class="flabel" style="margin-bottom:4px">📑 Plan de división propuesto</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:14px;line-height:1.6">
+          La IA propone <span id="plan-count" style="color:var(--y);font-weight:700">—</span> MDs temáticos para este documento.
+          Puedes editar títulos, fusionar, dividir o reorganizar antes de generar.
+        </div>
+        <div id="plan-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-g" style="margin-top:12px;font-size:10px" onclick="addPlanItem()">＋ AÑADIR MD MANUAL</button>
+      </div>
+
+      <!-- Ubicación propuesta (compartida por todos los MDs) -->
+      <div class="fsec" style="margin-top:18px">
+        <div class="flabel" style="margin-bottom:8px">📁 Ubicación en Drive (común)</div>
+        <div class="loccard" id="loc-suggested">
+          <div class="loccard-eje" id="loc-eje">—</div>
+          <div class="loccard-path" id="loc-path">—</div>
+          <div class="loccard-reason" id="loc-reason">—</div>
+        </div>
+        <button class="btn btn-g" style="margin-top:8px;font-size:9px" onclick="toggleManualLoc()">CAMBIAR MANUALMENTE</button>
+        <div id="loc-manual-sec" style="display:none;margin-top:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div class="cbtn" onclick="selEje2('NEGOCIO')" id="e2-NEGOCIO"><div class="cv">💼 NEGOCIO</div></div>
+            <div class="cbtn" onclick="selEje2('CLIENTE')" id="e2-CLIENTE"><div class="cv">🧍 CLIENTE</div></div>
+            <div class="cbtn" onclick="selEje2('OPERACIONES')" id="e2-OPERACIONES"><div class="cv">⚙️ OPS</div></div>
+          </div>
+          <select class="bsel" id="sub2" onchange="onSub2()"><option value="">Subcarpeta…</option></select>
+        </div>
+      </div>
+
+      <div class="fnav">
+        <button class="btn btn-y" id="btn-go-generate" onclick="goStep(4);setTimeout(()=>startGeneration(),50)">GENERAR MDs →</button>
+        <button class="btn btn-g" onclick="goStep(2)">← VOLVER</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STEP 4: GENERACIÓN EN PARALELO ══ -->
+<div class="screen" id="screen-4">
+  <div style="flex:1;overflow-y:auto;padding:20px 24px" id="c-gen">
+    <div style="max-width:900px;margin:0 auto">
+      <div class="ftitle" style="margin-bottom:6px">Generando MDs</div>
+      <div class="fsub" style="margin-bottom:18px">Cada MD se genera independientemente. Se lanzan en tandas de 3 para no saturar la API.</div>
+      <div id="gen-progress-bar" style="margin-bottom:18px;padding:12px 14px;background:var(--s1);border:1px solid var(--b1);font-family:'Space Mono',monospace;font-size:11px;color:var(--t1);display:flex;justify-content:space-between;align-items:center">
+        <span><span id="gen-done">0</span> / <span id="gen-total">0</span> MDs completados</span>
+        <span id="gen-eta" style="color:var(--t3);font-size:10px">—</span>
+      </div>
+      <div id="gen-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div class="fnav" style="margin-top:20px">
+        <button class="btn btn-y" id="btn-go-result" onclick="goStep(5)" disabled>VER RESULTADO →</button>
+        <button class="btn btn-g" onclick="goStep(3)">← VOLVER AL PLAN</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STEP 5: RESULTADO ══ -->
+<div class="screen" id="screen-5">
+  <div style="flex:1;overflow-y:auto;padding:20px 24px" id="c5">
+    <div class="empty"><div class="empty-ico">⏳</div><div class="empty-t">Sin resultado</div><div class="empty-s">Vuelve al paso anterior y genera los Markdowns.</div></div>
+  </div>
+  <div class="mfooter">
+    <button class="btn btn-y" onclick="copyAll()">COPIAR TODOS LOS MDs</button>
+    <button class="btn btn-y" id="btn-view-rows" onclick="sendToGlosarioAuto(true)" style="background:var(--s3);color:var(--t3)" disabled>⏳ PREPARANDO FILAS…</button>
+    <div class="mfchars" id="mfchars"></div>
+    <button class="btn btn-g" onclick="resetAll()">NUEVO DOCUMENTO</button>
+  </div>
+</div>
+
+<script>
+
+// Modelo IA usado en todas las llamadas a Anthropic.
+// Cambiar aquí cuando se quiera probar otro modelo (Haiku 5, Sonnet 4.5, etc.).
+const AI_MODEL = 'claude-haiku-4-5-20251001';
+
+// Real Drive assets folder IDs (one per subcarpeta)
+const ASSETS_FOLDERS={
+  'EJE1. 1 ADQUISICIÓN (VENTAS)':'1-4rRhiJJ3TUtXm3SqOGYMCBpGlekePpr',
+  'EJE1. 2 ENGAGEMENT (FIDELIZACIÓN)':'1pYLKnWRy7WWE-JNMz_CoU5N-531CWKOU',
+  'EJE1. 3 BUSINESS DEVELOPMENT (Expansión)':'1DpU5cxEYdcJaUV27yBwuHJ1tQ5moqdd-',
+  'EJE2. 1 REQUERIMIENTOS':'1zI9xHY9EioPl21QTvbaMb3OeP04TZjSM',
+  'EJE2. 2 DERECHOS':'1A9fdU98_AzfG3d6roX2k9WLtsbmT6LaM',
+  'EJE2. 3 OBLICACIONES':'1siNSRUMV0Rv2xdZicCQAGN_8giTFGIem', // SIC: typo histórico en Drive, debería ser "OBLIGACIONES"
+  'EJE3. 1 PROVEER ELEMENTOS':'1ogpLTi2YCmYcQ2026gAiYpyV2tmzQoJ2',
+  'EJE3. 2 PROVEER SERVICIOS':'1o7yfLUV6Df2jwdA0QDbR-JqzEzXXHW3K',
+};
+const SUBS={
+  NEGOCIO:['EJE1. 1 ADQUISICIÓN (VENTAS)','EJE1. 2 ENGAGEMENT (FIDELIZACIÓN)','EJE1. 3 BUSINESS DEVELOPMENT (Expansión)'],
+  CLIENTE:['EJE2. 1 REQUERIMIENTOS','EJE2. 2 DERECHOS','EJE2. 3 OBLICACIONES'], // SIC: typo histórico, debería ser "OBLIGACIONES"
+  OPERACIONES:['EJE3. 1 PROVEER ELEMENTOS','EJE3. 2 PROVEER SERVICIOS'],
+};
+const EJE_FULL={NEGOCIO:'EJE1. NEGOCIO',CLIENTE:'EJE2. CLIENTE',OPERACIONES:'EJE3. OPERACIONES'};
+const ICONS={pdf:'📕',docx:'📘',doc:'📘',txt:'📃',md:'📋',rtf:'📄',html:'🌐'};
+
+// Builds a standardized image filename:
+// TIPO_TituloSlug_pN_descripcion_corta.jpg
+// Ex: PROC_Onboarding_p3_dashboard_metricas.jpg
+function suggestImageName(img){
+  const type = S.type || 'IMG';
+  const titleSlug = (S.title || 'Doc').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+  const pagePart = img.page ? 'p'+img.page+'_' : '';
+  // Slugify alt text: lowercase, strip accents, collapse non-alphanumeric to underscores
+  let altSlug = (img.alt || 'imagen')
+    .toLowerCase()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i')
+    .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n')
+    .replace(/[^a-z0-9]+/g,'_')
+    .replace(/^_+|_+$/g,''); // trim leading/trailing underscores
+  // Truncate at word boundary (last underscore before char 30) to avoid mid-word cuts
+  if(altSlug.length > 30){
+    const lastUnderscore = altSlug.lastIndexOf('_', 30);
+    altSlug = lastUnderscore > 10 ? altSlug.substring(0, lastUnderscore) : altSlug.substring(0, 30);
+    altSlug = altSlug.replace(/_+$/,''); // trim any trailing underscore from the cut
+  }
+  if(!altSlug) altSlug = 'imagen';
+  return type+'_'+titleSlug+'_'+pagePart+altSlug+'.jpg';
+}
+
+const S={file:null,text:null,type:null,title:'',owner:'',conf:null,eje:null,sub:'',proposal:null,propIdx:0,propAlt:0,blocks:[],imgs:[],plan:[],planRationale:'',locReason:'',contextMds:[],_pdfBase64:null,_textReady:null,_pdfScanPending:false};
+
+// NAV
+function goStep(n){
+  document.querySelectorAll('.screen').forEach((s,i)=>s.classList.toggle('active',i+1===n));
+  document.querySelectorAll('.stab').forEach((t,i)=>{t.classList.remove('active');if(i+1<n)t.classList.add('done');else if(i+1===n)t.classList.add('active');});
+}
+function unlock(n){document.getElementById('stab-'+n)?.classList.remove('locked');}
+
+// FILE
+function onFile(e){if(e.target.files[0])loadFile(e.target.files[0]);}
+const dz=document.getElementById('drop');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+
+async function loadFile(f){
+  S.file=f; S.text=null; S.imgs=[];
+  const ext=f.name.split('.').pop().toLowerCase();
+  document.getElementById('fpi').textContent=ICONS[ext]||'📄';
+  document.getElementById('fpn').textContent=f.name;
+  document.getElementById('fps').textContent=fsz(f.size)+' · '+ext.toUpperCase()+' · extrayendo texto…';
+  document.getElementById('fpill').classList.add('on');
+  document.getElementById('drop').style.display='none';
+  
+  document.getElementById('btn1').disabled=true;
+
+  try{
+    let text='';
+
+    if(['txt','md','html','rtf'].includes(ext)){
+      // Plain text — read directly
+      text = await f.text();
+
+    } else if(ext==='pdf'){
+      // Encode PDF to base64
+      document.getElementById('fps').textContent=fsz(f.size)+' · PDF · preparando…';
+      const base64 = await new Promise((res,rej)=>{
+        const rd=new FileReader();
+        rd.onload=e=>res(e.target.result.split(',')[1]);
+        rd.onerror=rej;
+        rd.readAsDataURL(f);
+      });
+      S._pdfBase64 = base64;
+
+      // Store a placeholder so check1 passes (button enabled, but runAll will await extraction).
+      S.text = '[PDF pendiente de análisis — se enviará directamente a la API]';
+      document.getElementById('fps').textContent=fsz(f.size)+' · PDF · extrayendo texto…';
+      check1();
+
+      // Text extraction promise — stored on S so runAll can await it before generating the plan.
+      // FIX v12: anteriormente, si el usuario hacía clic en GENERAR antes de que terminara la
+      // extracción, el plan se generaba contra el placeholder y Claude respondía con la frase
+      // "Documento pendiente de análisis; no se ha recibido contenido procesable para dividir".
+      S._textReady = fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model: AI_MODEL, max_tokens:16000,
+          system:'Extrae el texto completo de este PDF. Recorre TODAS las páginas, de la primera a la última, sin saltarte ninguna. Devuelve ÚNICAMENTE el texto extraído, sin comentarios ni explicaciones. Conserva párrafos, secciones y encabezados. No resumas ni parafrasees — quiero el texto literal tal como aparece en el PDF.',
+          messages:[{role:'user',content:[
+            {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+            {type:'text',text:'Extrae TODO el texto, página por página, hasta la última. No te detengas antes del final.'}
+          ]}]
+        })
+      }).then(r=>r.json()).then(d=>{
+        if(d && !d.error){
+          const t=(d.content||[]).map(b=>b.text||'').join('').trim();
+          if(t.length>10){
+            S.text=t;
+            const fps=document.getElementById('fps');
+            if(fps) fps.textContent=fsz(f.size)+' · PDF · '+t.length.toLocaleString()+' chars ✓';
+            return t;
+          }
+        }
+        // Extracción vacía o con error — dejamos placeholder y avisamos en runAll
+        const fps=document.getElementById('fps');
+        if(fps) fps.textContent=fsz(f.size)+' · PDF · ⚠ extracción de texto vacía';
+        return null;
+      }).catch(e=>{
+        console.warn('PDF text extraction failed:', e);
+        const fps=document.getElementById('fps');
+        if(fps) fps.textContent=fsz(f.size)+' · PDF · ⚠ error extrayendo texto';
+        return null;
+      });
+
+      // Image scan corre en paralelo, independiente de la extracción de texto
+      scanImagesFromPdf(f.name).catch(e=>console.warn('Image scan:',e));
+
+      return;
+
+    } else if(['docx','doc'].includes(ext)){
+      // DOCX — extract with mammoth
+      const ab=await f.arrayBuffer();
+      const res=await mammoth.extractRawText({arrayBuffer:ab});
+      text=res.value;
+
+    } else {
+      // Fallback
+      text=await f.text().catch(()=>'');
+    }
+
+    if(!text || text.length < 10) throw new Error('No se pudo extraer texto del archivo');
+    S.text=text;
+    document.getElementById('fps').textContent=fsz(f.size)+' · '+ext.toUpperCase()+' · '+text.length.toLocaleString()+' chars extraídos ✓';
+
+    // Enable button immediately — don't wait for image scan
+    check1();
+
+    // Run image scan in background (non-blocking)
+    if(ext==='pdf'){
+      scanImagesFromPdf(f.name).catch(e=>console.warn('Image scan failed:',e));
+    } else {
+      scanImages(text);
+    }
+
+  }catch(err){
+    S.text=null;
+    document.getElementById('fps').textContent=fsz(f.size)+' · ⚠ '+err.message;
+    // Still allow proceeding — user may want to try anyway
+    S.file=f;
+    check1();
+  }
+}
+function rmFile(){
+  S.file=null;S.text=null;S.imgs=[];S._pdfBase64=null;S._textReady=null;
+  document.getElementById('fpill').classList.remove('on');
+  document.getElementById('drop').style.display='';
+  document.getElementById('file-input').value='';
+  
+  check1();
+}
+function fsz(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB';}
+
+// ── CONTEXT MDs (memory) ─────────────────────────────────────────────────────
+// Existing MDs from the Brain that the user uploads as reference so the new MD
+// won't duplicate content and may instead UPDATE an existing one.
+function onCtxFiles(e){
+  const files = Array.from(e.target.files || []);
+  files.forEach(f => loadCtxMd(f));
+  // reset the input so the same file can be re-selected later
+  e.target.value = '';
+}
+async function loadCtxMd(f){
+  try{
+    const text = await f.text();
+    if(!text || text.length < 10) return;
+    if(S.contextMds.some(m => m.name === f.name)) return;
+    const titleMatch = text.match(/^#\s+(.+)$/m);
+    const kwMatch = text.match(/^KEYWORDS:\s*(.+)$/m);
+    // Try to extract conf and eje from filename pattern or content
+    // Filename: TIPO_Base_Suffix.md — eje is derived from folder context
+    // We'll let the user-supplied metadata inform this, stored as unknown if not parseable
+    S.contextMds.push({
+      name: f.name,
+      content: text,
+      title: titleMatch ? titleMatch[1].trim() : f.name.replace(/\.md$/i,''),
+      keywords: kwMatch ? kwMatch[1].trim() : '',
+      size: f.size
+    });
+    renderCtxList();
+  }catch(err){
+    console.warn('ctx md load failed', err);
+  }
+}
+function removeCtxMd(idx){
+  S.contextMds.splice(idx, 1);
+  renderCtxList();
+}
+function renderCtxList(){
+  const list = document.getElementById('ctx-list');
+  if(!S.contextMds.length){ list.innerHTML = ''; return; }
+  list.innerHTML = S.contextMds.map((m,i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 11px;background:var(--s2);border:1px solid var(--b1);border-left:3px solid var(--blue)">
+      <div style="font-size:14px;flex-shrink:0">📋</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.name)}</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(m.title)}">${esc(m.title)}</div>
+        ${m.keywords ? `<div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--yd);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(m.keywords)}">${esc(m.keywords)}</div>` : ''}
+      </div>
+      <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--t3);flex-shrink:0">${fsz(m.size)}</div>
+      <div onclick="removeCtxMd(${i})" style="cursor:pointer;color:var(--t3);font-size:16px;padding:0 4px;line-height:1;flex-shrink:0" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--t3)'">×</div>
+    </div>
+  `).join('');
+}
+// drag&drop for context MDs
+const ctxDz = document.getElementById('ctx-drop');
+if(ctxDz){
+  ctxDz.addEventListener('dragover', e=>{e.preventDefault(); ctxDz.classList.add('drag');});
+  ctxDz.addEventListener('dragleave', ()=>ctxDz.classList.remove('drag'));
+  ctxDz.addEventListener('drop', e=>{
+    e.preventDefault(); ctxDz.classList.remove('drag');
+    Array.from(e.dataTransfer.files || []).forEach(f=>{
+      if(/\.(md|txt)$/i.test(f.name)) loadCtxMd(f);
+    });
+  });
+}
+
+// ── IMAGE SKIP (discard) ──────────────────────────────────────────────────────
+// Toggles the "skipped" flag on an image. Skipped images are NOT uploaded to Drive;
+// in the final MD they're replaced by *[alt text]* (or removed if no alt).
+function toggleSkip(id){
+  const img=S.imgs[id]; if(!img) return;
+  img.skipped=!img.skipped;
+  if(img.skipped) img.link='';
+  if(S.blocks.length){
+    applySkipToBlocks(img);
+  }
+  // Re-render whichever view is visible
+  const s1=document.getElementById('ic1-'+id);
+  const s3=document.getElementById('ic3-'+id);
+  if(s1) s1.classList.toggle('skipped', img.skipped);
+  if(s3) s3.classList.toggle('skipped', img.skipped);
+  document.querySelectorAll('.icskip-btn[data-img="'+id+'"]').forEach(b=>{
+    b.textContent = img.skipped ? 'RECUPERAR' : 'DESCARTAR';
+  });
+  // Update status badges (ist1 in step 1, icst3 in step 3)
+  [['ist1-','icst'],['icst3-','icst']].forEach(([pre,cls])=>{
+    const el=document.getElementById(pre+id);
+    if(!el) return;
+    if(img.skipped){ el.textContent='DESCARTADA'; el.className=cls+' skip'; }
+    else {
+      const inp=document.getElementById('ilink1-'+id)||document.getElementById('il3-'+id);
+      const v=inp?inp.value.trim():'';
+      if(!v){ el.textContent='SIN LINK'; el.className=cls; }
+      else { el.textContent='OK'; el.className=cls+' ok'; }
+    }
+  });
+  // If in step 4 (Resultado), re-render the full result to reflect MD changes
+  if(S.blocks.length && document.getElementById('screen-5')?.classList.contains('active')){
+    renderResultStep4();
+  }
+}
+// Replace any image markdown referring to this placeholder with italic descriptive text
+function applySkipToBlocks(img){
+  const desc=(img.alt||'').trim();
+  const replacement = desc ? `*[${desc}]*` : '';
+  S.blocks.forEach(b=>{
+    if(img.skipped){
+      // Match ![anything](imagen_placeholder_N) OR ![anything](<driveEmbedUrl that was this img>)
+      b.content = b.content.replace(
+        new RegExp('!\\[[^\\]]*\\]\\('+escR(img.ph)+'\\)','g'),
+        replacement
+      );
+      // Also remove any embed link previously inserted for this image
+      // (we cleared img.link above, so we check via per-image tracking isn't possible;
+      //  skip this fallback — user can only skip before or recover link manually)
+    } else {
+      // Recovered: restore the placeholder so user can paste link again
+      const altText = img.alt || img.ph;
+      // If MD still has the italic descriptive text, revert to placeholder form
+      if(desc){
+        b.content = b.content.replace(
+          new RegExp(escR(`*[${desc}]*`),'g'),
+          `![${altText}](${img.ph})`
+        );
+      }
+    }
+  });
+}
+function activeImgs(){ return S.imgs.filter(i=>!i.skipped); }
+
+// ── DRIVE LINK VALIDATION & CONVERSION ────────────────────────────────────────
+// Extracts the file ID from any valid Google Drive file link format.
+// Returns the file ID string, or null if the link is invalid/not a Drive file.
+function extractDriveFileId(url){
+  if(!url || typeof url !== 'string') return null;
+  const u = url.trim();
+  if(!u) return null;
+  // Reject folder links explicitly — we want files for images
+  if(/drive\.google\.com\/drive\/folders\//.test(u)) return null;
+  // Common patterns: /file/d/ID/view, open?id=ID, uc?id=ID, uc?export=view&id=ID
+  const patterns = [
+    /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]{20,})/,
+    /drive\.google\.com\/open\?(?:.*&)?id=([a-zA-Z0-9_-]{20,})/,
+    /drive\.google\.com\/uc\?(?:.*&)?id=([a-zA-Z0-9_-]{20,})/,
+    /docs\.google\.com\/(?:document|presentation|spreadsheets)\/d\/([a-zA-Z0-9_-]{20,})/,
+    /lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]{20,})/
+  ];
+  for(const re of patterns){ const m = u.match(re); if(m) return m[1]; }
+  return null;
+}
+// Converts any Drive share link into the thumbnail URL format (thumbnail?id=...&sz=w1200).
+// This is optimized for MD rendering — fast, no redirects, proper image sizing.
+function toDriveCanonicalUrl(url){
+  const id = extractDriveFileId(url);
+  if(!id) return null;
+  return 'https://drive.google.com/thumbnail?id='+id+'&sz=w1200';
+}
+// Classify link: 'ok' | 'folder' | 'invalid' | 'empty'
+function classifyDriveLink(url){
+  const t = (url||'').trim();
+  if(!t) return 'empty';
+  if(/drive\.google\.com\/drive\/folders\//.test(t)) return 'folder';
+  return extractDriveFileId(t) ? 'ok' : 'invalid';
+}
+
+// IMAGES
+function scanImages(text){
+  S.imgs=[];const seen=new Set();
+  const re1=/!\[([^\]]*)\]\((imagen_placeholder_\d+)\)/g;let m;
+  while((m=re1.exec(text))!==null){if(!seen.has(m[2])){seen.add(m[2]);S.imgs.push({id:S.imgs.length,ph:m[2],alt:m[1],link:'',bi:-1});}}
+  const re2=/\b(imagen_placeholder_\d+)\b/g;
+  while((m=re2.exec(text))!==null){if(!seen.has(m[1])){seen.add(m[1]);S.imgs.push({id:S.imgs.length,ph:m[1],alt:'',link:'',bi:-1});}}
+  renderImgStep1();
+}
+
+// For PDFs: send to Claude to identify embedded images automatically
+function parseLocationJsonResilient(raw){
+  const fallback = {eje:'NEGOCIO', subcarpeta:SUBS.NEGOCIO[0], razonamiento:'No determinado'};
+  if(!raw) return fallback;
+  let text = raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+  try { return JSON.parse(text); } catch(e){}
+  const m = text.match(/\{[\s\S]*\}/);
+  if(m){
+    try { return JSON.parse(m[0]); } catch(e){}
+    const cleaned = m[0]
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/,\s*([\]}])/g, '$1')
+      .replace(/[\r\n\t]+/g, ' ');
+    try { return JSON.parse(cleaned); } catch(e){}
+  }
+  return fallback;
+}
+
+// Resilient JSON parser for image-detection responses.
+// Tries multiple strategies because Claude sometimes produces JSON with
+// unescaped quotes/newlines inside `description` strings that break JSON.parse.
+function parseImagesJsonResilient(raw){
+  if(!raw || typeof raw !== 'string') return {images:[]};
+
+  // Strip code fences and leading/trailing text
+  let text = raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+
+  // Strategy 1: parse as-is
+  try { return JSON.parse(text); } catch(e1){}
+
+  // Strategy 2: extract the outermost {...} block and try
+  const m = text.match(/\{[\s\S]*\}/);
+  if(m){
+    try { return JSON.parse(m[0]); } catch(e2){}
+
+    // Strategy 3: clean common issues — newlines inside strings, smart quotes, trailing commas
+    let cleaned = m[0]
+      .replace(/[\u201C\u201D]/g, '"')      // smart double quotes -> straight
+      .replace(/[\u2018\u2019]/g, "'")      // smart single quotes -> straight
+      .replace(/,\s*([\]}])/g, '$1')         // remove trailing commas
+      .replace(/[\r\n\t]+/g, ' ');           // collapse newlines/tabs inside JSON
+    try { return JSON.parse(cleaned); } catch(e3){}
+
+    // Strategy 4: extract individual image objects with regex (last resort)
+    // Tolerant to unescaped quotes inside description by greedy-matching until next "id" or end
+    const imgRegex = /"id"\s*:\s*(\d+)\s*,\s*"page"\s*:\s*(\d+|null)\s*,\s*"description"\s*:\s*"([\s\S]*?)"\s*\}(?=\s*[,\]])/g;
+    const images = [];
+    let match;
+    while((match = imgRegex.exec(m[0])) !== null){
+      images.push({
+        id: parseInt(match[1]),
+        page: match[2]==='null' ? null : parseInt(match[2]),
+        description: match[3].replace(/\\"/g, '"').replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim()
+      });
+    }
+    if(images.length) return {images};
+  }
+
+  // Strategy 5: total fail — return empty so the UI shows manual fallback
+  console.warn('parseImagesJsonResilient: all strategies failed for raw:', raw.substring(0, 500));
+  return {images:[], _parseError: true};
+}
+
+async function scanImagesFromPdf(filename){
+  S.imgs=[];
+  S._pdfScanPending = true;
+  // v22: images panel lives in Step 2 (after location is known)
+  const sec=document.getElementById('img-step2');
+  const list=document.getElementById('img-step2-list');
+  if(sec) sec.style.display='block';
+  if(list) list.innerHTML=`<div style="padding:10px 12px;background:var(--s2);border:1px solid var(--b1);font-family:'Space Mono',monospace;font-size:10px;color:var(--t3)">🔍 Analizando imágenes del PDF… (disponible en el Paso 2)</div>`;
+
+  try{
+    // Re-use already-encoded base64 if available, otherwise re-encode
+    const base64 = S._pdfBase64 || await new Promise((res,rej)=>{
+      const rd=new FileReader();
+      rd.onload=e=>res(e.target.result.split(',')[1]);
+      rd.onerror=rej;
+      rd.readAsDataURL(S.file);
+    });
+
+    const r = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: AI_MODEL, max_tokens:8000,
+        system:`Analiza este PDF e identifica TODAS las imágenes, capturas de pantalla, gráficos, diagramas, ilustraciones y fotografías que contiene. NO omitas ninguna, aunque el PDF tenga muchas páginas.
+
+REGLAS:
+- Recorre TODAS las páginas del PDF de principio a fin, sin saltarte ninguna.
+- Lista cada imagen visible en cada página (puede haber varias por página).
+- Si una página tiene solo texto y fondo de color, NO la incluyas como imagen.
+- Si una página contiene logo + contenido textual + una foto, la FOTO sí es imagen; el logo corporativo pequeño repetido NO hace falta listarlo.
+- Para cada imagen relevante: id secuencial, página, y una descripción breve concreta (qué se ve).
+
+Responde SOLO con JSON sin backticks:
+{"images":[{"id":1,"page":1,"description":"descripción breve"},{"id":2,"page":3,"description":"..."}]}
+Si no hay imágenes relevantes devuelve: {"images":[]}`,
+        messages:[{role:'user',content:[
+          {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64},cache_control:{type:'ephemeral'}},
+          {type:'text',text:'Recorre el PDF de la primera a la última página y lista TODAS las imágenes, capturas, diagramas y fotografías relevantes. No te detengas antes de la última página.'}
+        ]}]
+      })
+    });
+    const d=await r.json();
+    if(d.error) throw new Error(d.error.message);
+    const raw=(d.content||[]).map(b=>b.text||'').join('').trim();
+    let parsed = parseImagesJsonResilient(raw);
+
+    const images=parsed.images||[];
+    if(parsed._parseError){
+      S._pdfScanPending = false;
+      list.innerHTML = `<div style="padding:10px 12px;background:rgba(255,140,0,.07);border-left:3px solid var(--orange);font-size:11px;color:var(--orange);margin-bottom:10px">⚠ La IA detectó imágenes pero la respuesta llegó mal formada. Indica el número manualmente abajo.</div>`;
+      return;
+    }
+    if(!images.length){
+      S._pdfScanPending = false;
+      list.innerHTML=`<div style="padding:10px 12px;background:rgba(0,212,126,.07);border-left:3px solid var(--green);font-size:11px;color:var(--green)">✓ No se detectaron imágenes relevantes en el PDF.</div>`;
+      return;
+    }
+
+    // Build S.imgs — renderImgStep2 will build the UI (called after location is confirmed in Step 2)
+    S.imgs = images.map((img,i)=>({id:i, ph:'imagen_placeholder_'+(i+1), alt:img.description, page:img.page||null, link:'', bi:-1}));
+    S._pdfScanPending = false;
+    // Clear the "scanning" placeholder — renderImgStep2 will fill it when Step 2 opens
+    if(list) list.innerHTML='';
+    if(sec) sec.style.display='none'; // hide until Step 2 renders it properly
+
+  }catch(e){
+    S._pdfScanPending = false;
+    // Fallback to manual entry on error
+    list.innerHTML=`
+      <div style="padding:10px 12px;background:rgba(255,64,64,.07);border-left:3px solid var(--red);font-size:11px;color:var(--red);margin-bottom:10px">⚠ No se pudo analizar automáticamente: ${e.message}</div>
+      <div style="padding:10px 12px;background:var(--s2);border:1px solid var(--b1);display:flex;align-items:center;gap:10px">
+        <label style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t3)">Introduce el nº de imágenes manualmente:</label>
+        <input type="number" id="pdf-img-count" min="0" max="30" value="0"
+          style="width:60px;background:var(--s1);border:1px solid var(--b1);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px;outline:none"
+          oninput="buildPdfImgFields(this.value)">
+        <div id="pdf-img-fields" style="width:100%"></div>
+      </div>`;
+  }
+}
+
+function buildPdfImgFields(n){
+  n=Math.max(0,Math.min(30,parseInt(n)||0));
+  S.imgs=[];
+  const wrap=document.getElementById('pdf-img-fields');
+  if(!n){wrap.innerHTML='';return;}
+  wrap.innerHTML='';
+  for(let i=0;i<n;i++){
+    const ph='imagen_placeholder_'+(i+1);
+    S.imgs.push({id:i,ph,alt:'',link:'',bi:-1});
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;flex-direction:column;gap:6px;padding:8px 0;border-top:1px solid var(--b1)';
+    d.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--y)">${ph}</div>
+        <input placeholder="Descripción breve (opcional)" id="palt-${i}"
+          style="flex:1;background:var(--s1);border:1px solid var(--b1);color:var(--t1);font-family:'Space Mono',monospace;font-size:9px;padding:4px 8px;outline:none"
+          oninput="S.imgs[${i}].alt=this.value">
+        <div class="icst" id="pst-${i}">SIN LINK</div>
+      </div>
+      <input class="icinp" id="plink-${i}" placeholder="https://drive.google.com/file/d/…"
+        oninput="onPdfImgLink(${i})">`;
+    wrap.appendChild(d);
+  }
+}
+
+function onPdfImgLink(i){
+  const val=document.getElementById('plink-'+i).value.trim();
+  const st=document.getElementById('pst-'+i);
+  const kind=classifyDriveLink(val);
+  let hint=document.getElementById('phint-'+i);
+  if(!hint){
+    const inp=document.getElementById('plink-'+i);
+    if(inp && inp.parentElement){
+      hint=document.createElement('div');
+      hint.id='phint-'+i;
+      hint.className='ichint';
+      inp.insertAdjacentElement('afterend', hint);
+    }
+  }
+  if(kind==='empty'){
+    S.imgs[i].link='';
+    st.textContent='SIN LINK';st.className='icst';
+    if(hint)hint.className='ichint';
+  } else if(kind==='ok'){
+    S.imgs[i].link=toDriveCanonicalUrl(val);
+    st.textContent='OK';st.className='icst ok';
+    if(hint)hint.className='ichint';
+  } else if(kind==='folder'){
+    S.imgs[i].link='';
+    st.textContent='CARPETA';st.className='icst err';
+    if(hint){hint.className='ichint on warn';hint.textContent='⚠ Es una carpeta. Pega el link del archivo de imagen.';}
+  } else {
+    S.imgs[i].link='';
+    st.textContent='INVÁLIDO';st.className='icst err';
+    if(hint){hint.className='ichint on err';hint.textContent='✗ No es un link válido de Drive.';}
+  }
+}
+function renderImgStep1(){
+  // v22: images panel is now in Step 2 (location known before asking for links)
+  const sec=document.getElementById('img-step2');
+  const list=document.getElementById('img-step2-list');
+  if(!S.imgs.length){if(sec)sec.style.display='none';return;}
+  if(sec)sec.style.display='block';
+  list.innerHTML='';
+  S.imgs.forEach(img=>{
+    const suggestedName = suggestImageName(img);
+    const d=document.createElement('div');d.className='icard';d.id='ic1-'+img.id;
+    d.innerHTML=`<div class="ictop"><div class="icthumb">🖼</div><div class="icmeta"><div class="icid">${img.ph}</div><div class="icctx">${img.alt||'Sin descripción'}</div></div><div class="icst" id="ist1-${img.id}">SIN LINK</div><button class="icskip-btn" data-img="${img.id}" onclick="toggleSkip(${img.id})">DESCARTAR</button></div><div style="padding:7px 10px;background:#0A0800;border:1px dashed var(--b2);font-family:'Space Mono',monospace;font-size:9px;line-height:1.6;display:flex;align-items:center;gap:8px"><div style="flex:1;min-width:0"><div style="color:var(--yd)">📁 Nombre en Drive:</div><div style="color:var(--t1);word-break:break-all" id="iname-${img.id}">${suggestedName}</div></div><button onclick="copyImgName(${img.id},this)" style="font-family:'Space Mono',monospace;font-size:9px;padding:5px 10px;background:var(--s3);border:1px solid var(--b1);color:var(--y);cursor:pointer;white-space:nowrap">📋 COPIAR</button></div><div class="icrow"><input class="icinp" id="ilink1-${img.id}" placeholder="https://drive.google.com/file/d/…" oninput="onImgLink1(${img.id})"></div>`;
+    list.appendChild(d);
+  });
+}
+// v22: renderImgStep2 — renders image panel in Step 2 after Drive location is confirmed.
+// If PDF scan is still running (_pdfScanPending), shows a waiting state and polls until done.
+function renderImgStep2(){
+  const sec=document.getElementById('img-step2');
+  const list=document.getElementById('img-step2-list');
+  if(!sec||!list) return;
+  if(!S.imgs.length){
+    if(S._pdfScanPending){
+      sec.style.display='block';
+      list.innerHTML=`<div style="padding:10px 12px;background:var(--s2);border:1px solid var(--b1);font-family:'Space Mono',monospace;font-size:10px;color:var(--t3)">🔍 Analizando imágenes… espera un momento.</div>`;
+      const poll=setInterval(()=>{if(!S._pdfScanPending){clearInterval(poll);renderImgStep2();}},1000);
+    } else { sec.style.display='none'; }
+    return;
+  }
+  sec.style.display='block';
+  list.innerHTML='';
+  const banner=document.createElement('div');
+  banner.style.cssText='padding:10px 12px;background:rgba(255,140,0,.07);border-left:3px solid var(--orange);font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:10px';
+  banner.innerHTML=`<strong style="color:var(--orange)">🖼 ${S.imgs.length} imagen${S.imgs.length>1?'es':''} detectada${S.imgs.length>1?'s':''}.</strong><br>Sube cada una a <code style="background:var(--s3);padding:1px 5px;color:var(--y)">Brooklyn Brain / ${EJE_FULL[S.eje]||'…'} / ${S.sub||'…'} / assets / images</code> → Compartir → <strong style="color:var(--t1)">Cualquier persona con el enlace puede ver</strong> → Copiar enlace.`;
+  list.appendChild(banner);
+  S.imgs.forEach(img=>{
+    const pageLabel=img.page?`<span style="font-family:'Space Mono',monospace;font-size:8px;background:var(--s3);border:1px solid var(--b1);color:var(--t3);padding:1px 6px;margin-left:6px">p. ${img.page}</span>`:'';
+    const suggestedName=suggestImageName(img);
+    const d=document.createElement('div');
+    d.className='icard'; d.id='ic1-'+img.id;
+    d.innerHTML=`<div class="ictop"><div class="icthumb">🖼</div><div class="icmeta"><div class="icid" style="display:flex;align-items:center">${img.ph}${pageLabel}</div><div class="icctx">${img.alt||'Sin descripción'}</div></div><div class="icst" id="ist1-${img.id}">SIN LINK</div><button class="icskip-btn" data-img="${img.id}" onclick="toggleSkip(${img.id})">DESCARTAR</button></div><div style="padding:7px 10px;background:#0A0800;border:1px dashed var(--b2);font-family:'Space Mono',monospace;font-size:9px;line-height:1.6;display:flex;align-items:center;gap:8px"><div style="flex:1;min-width:0"><div style="color:var(--yd)">📁 Nombre en Drive:</div><div style="color:var(--t1);word-break:break-all" id="iname-${img.id}">${suggestedName}</div></div><button onclick="copyImgName(${img.id},this)" style="font-family:'Space Mono',monospace;font-size:9px;padding:5px 10px;background:var(--s3);border:1px solid var(--b1);color:var(--y);cursor:pointer;white-space:nowrap">📋 COPIAR</button></div><div class="icrow"><input class="icinp" id="ilink1-${img.id}" placeholder="https://drive.google.com/file/d/…" oninput="onImgLink1(${img.id})"></div>`;
+    list.appendChild(d);
+  });
+}
+// Copy the suggested filename to clipboard
+function copyImgName(id, btn){
+  const el = document.getElementById('iname-'+id);
+  if(!el) return;
+  const name = el.textContent;
+  const orig = btn.textContent;
+  const success = () => {
+    btn.textContent = '✓ COPIADO';
+    btn.style.color = 'var(--green)';
+    setTimeout(()=>{ btn.textContent = orig; btn.style.color = 'var(--y)'; }, 1500);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(name).then(success).catch(()=>{
+      if(execCopyFallback(name)) success();
+      else { btn.textContent = '✗ BLOQUEADO'; btn.style.color = 'var(--red)'; }
+    });
+  } else {
+    if(execCopyFallback(name)) success();
+    else { btn.textContent = '✗ BLOQUEADO'; btn.style.color = 'var(--red)'; }
+  }
+}
+// Recompute all visible filenames when type or title changes (called from step 1 form)
+function refreshImgNames(){
+  S.imgs.forEach(img=>{
+    const el = document.getElementById('iname-'+img.id);
+    if(el) el.textContent = suggestImageName(img);
+  });
+}
+function onImgLink1(id){
+  const val=document.getElementById('ilink1-'+id).value.trim();
+  const st=document.getElementById('ist1-'+id);
+  const kind=classifyDriveLink(val);
+  // Ensure hint element exists next to this card
+  let hint=document.getElementById('ihint1-'+id);
+  if(!hint){
+    const inp=document.getElementById('ilink1-'+id);
+    if(inp && inp.parentElement){
+      hint=document.createElement('div');
+      hint.id='ihint1-'+id;
+      hint.className='ichint';
+      inp.parentElement.insertAdjacentElement('afterend', hint);
+    }
+  }
+  if(kind==='empty'){
+    S.imgs[id].link='';
+    st.textContent='SIN LINK';st.className='icst';
+    if(hint)hint.className='ichint';
+  } else if(kind==='ok'){
+    S.imgs[id].link=toDriveCanonicalUrl(val);
+    st.textContent='OK';st.className='icst ok';
+    if(hint)hint.className='ichint';
+  } else if(kind==='folder'){
+    S.imgs[id].link='';
+    st.textContent='CARPETA';st.className='icst err';
+    if(hint){hint.className='ichint on warn';hint.textContent='⚠ Esto es una carpeta. Pega el link de un archivo (imagen) de Drive.';}
+  } else {
+    S.imgs[id].link='';
+    st.textContent='INVÁLIDO';st.className='icst err';
+    if(hint){hint.className='ichint on err';hint.textContent='✗ No es un link válido de Google Drive. Debe contener /file/d/… o ?id=…';}
+  }
+}
+
+// Sync any step-1 inputs into S.imgs before moving forward
+function syncStep1ImgLinks(){
+  S.imgs.forEach(img=>{
+    // standard format (non-PDF)
+    const inp1=document.getElementById('ilink1-'+img.id);
+    if(inp1&&inp1.value.trim()){
+      const embed=toDriveCanonicalUrl(inp1.value.trim());
+      if(embed) img.link=embed;
+    }
+    // PDF format
+    const inpP=document.getElementById('plink-'+img.id);
+    if(inpP&&inpP.value.trim()){
+      const embed=toDriveCanonicalUrl(inpP.value.trim());
+      if(embed) img.link=embed;
+    }
+    const altP=document.getElementById('palt-'+img.id);
+    if(altP&&altP.value.trim()) img.alt=altP.value.trim();
+  });
+}
+
+// STEP 1 FORM
+function selType(t){S.type=t;document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('sel'));document.getElementById('t-'+t).classList.add('sel');document.getElementById('pfx').textContent=t+'_';updatePrev();check1();refreshImgNames();}
+function selOwner(val){
+  S.owner=val;
+  document.querySelectorAll('#owner-grid .cbtn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('ow-'+val)?.classList.add('sel');
+  check1();
+}
+function onTitle(){S.title=document.getElementById('tinp').value.trim();updatePrev();check1();refreshImgNames();}
+function updatePrev(){const el=document.getElementById('fprev');if(S.type&&S.title){el.textContent='📄 '+S.type+'_'+S.title.replace(/\s+/g,'_')+'.md';el.classList.add('on');}else el.classList.remove('on');}
+function selConf(val){
+  S.conf = val;
+  const btnInternal = document.getElementById('conf-btn-internal');
+  const btnBoth = document.getElementById('conf-btn-both');
+  const lblInternal = document.getElementById('conf-lbl-internal');
+  const lblBoth = document.getElementById('conf-lbl-both');
+  // Reset both
+  [btnInternal, btnBoth].forEach(b=>{ b.style.borderColor='var(--b1)'; b.style.background='var(--s2)'; });
+  [lblInternal, lblBoth].forEach(l=>l.style.color='var(--t3)');
+  // Activate selected
+  if(val==='internal'){
+    btnInternal.style.borderColor='var(--y)'; btnInternal.style.background='rgba(255,214,0,.05)';
+    lblInternal.style.color='var(--y)';
+  } else {
+    btnBoth.style.borderColor='var(--y)'; btnBoth.style.background='rgba(255,214,0,.05)';
+    lblBoth.style.color='var(--y)';
+  }
+  document.getElementById('conf-value').textContent = val;
+  check1();
+}
+function check1(){document.getElementById('btn1').disabled=!(S.file&&S.text&&S.type&&S.title&&S.owner&&S.conf);}
+
+// ── STEP 2: LOCATION DETERMINATION ──────────────────────────────────────────
+async function showLocationStep(){
+  syncStep1ImgLinks();
+  goStep(2); unlock(2); unlock(3);
+
+  // Show loading state immediately
+  document.getElementById('loc-eje-s2').textContent='Analizando…';
+  document.getElementById('loc-path-s2').innerHTML='<span style="color:var(--t3);font-size:10px;font-family:\'Space Mono\',monospace">⏳ Determinando ubicación…</span>';
+  document.getElementById('loc-reason-s2').textContent='';
+  document.getElementById('assets-base-path').textContent='Calculando…';
+  document.getElementById('nav-path').innerHTML='<span style="color:var(--t3)">calculando…</span>';
+
+  // Esperar extracción de PDF si está en curso
+  if(S._textReady && S.text && S.text.startsWith('[PDF pendiente')){
+    document.getElementById('loc-path-s2').innerHTML='<span style="color:var(--t3);font-size:10px;font-family:\'Space Mono\',monospace">⏳ Extrayendo texto del PDF… (10-30s)</span>';
+    try { await S._textReady; } catch(e){ console.warn('await text:', e); }
+  }
+
+  const textOk = S.text && !S.text.startsWith('[PDF pendiente') && S.text.length >= 50;
+  if(!textOk){
+    document.getElementById('loc-eje-s2').textContent='ERROR';
+    document.getElementById('loc-path-s2').textContent='No se pudo extraer texto';
+    return;
+  }
+
+  // Determine location via API
+  try{
+    const locRes = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model: AI_MODEL, max_tokens:400,
+        system:`Analiza el documento y determina su ubicación en el Drive de Brooklyn Brain.
+ESTRUCTURA DEL DRIVE:
+EJE1. NEGOCIO: EJE1. 1 ADQUISICIÓN (VENTAS) | EJE1. 2 ENGAGEMENT (FIDELIZACIÓN) | EJE1. 3 BUSINESS DEVELOPMENT (Expansión)
+EJE2. CLIENTE: EJE2. 1 REQUERIMIENTOS | EJE2. 2 DERECHOS | EJE2. 3 OBLICACIONES
+EJE3. OPERACIONES: EJE3. 1 PROVEER ELEMENTOS | EJE3. 2 PROVEER SERVICIOS
+Responde SOLO JSON sin backticks: {"eje":"NEGOCIO|CLIENTE|OPERACIONES","subcarpeta":"nombre exacto","razonamiento":"1-2 frases"}`,
+        messages:[{role:'user',content:`Tipo:${S.type} Título:${S.title} Owner:${S.owner}\n\n${(S.text||'').substring(0,4000)}`}]
+      })
+    }).then(r=>r.json());
+
+    const raw=(locRes.content||[]).map(b=>b.text||'').join('').trim();
+    const loc = parseLocationJsonResilient(raw);
+    S.eje=loc.eje||'NEGOCIO';
+    S.sub=SUBS[S.eje]?.includes(loc.subcarpeta)?loc.subcarpeta:SUBS[S.eje][0];
+    S.locReason = loc.razonamiento || '—';
+  }catch(e){
+    S.eje='NEGOCIO'; S.sub=SUBS.NEGOCIO[0];
+    S.locReason = 'Error al determinar — usando valor por defecto';
+  }
+
+  // Render location card and assets path
+  document.getElementById('loc-eje-s2').textContent=EJE_FULL[S.eje];
+  document.getElementById('loc-path-s2').textContent='📁 Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub;
+  document.getElementById('loc-reason-s2').textContent=S.locReason;
+  document.getElementById('assets-base-path').textContent = 'Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub;
+  document.getElementById('nav-path').innerHTML = '<code style="background:var(--s3);padding:1px 5px;color:var(--y)">Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub+'</code>';
+
+  // v22: Now that location is known, show image panel in step 2
+  renderImgStep2();
+}
+
+function toggleManualLocStep2(){
+  const sec=document.getElementById('loc-manual-sec-s2');
+  sec.style.display=sec.style.display==='none'?'block':'none';
+}
+function selEje2S2(e){
+  S.eje=e;['NEGOCIO','CLIENTE','OPERACIONES'].forEach(x=>document.getElementById('e2s2-'+x)?.classList.remove('sel'));
+  document.getElementById('e2s2-'+e)?.classList.add('sel');
+  const sel=document.getElementById('sub2s2');sel.innerHTML='<option value="">Selecciona subcarpeta…</option>';
+  SUBS[e].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+}
+function onSub2S2(){
+  S.sub=document.getElementById('sub2s2').value;
+  if(S.sub){
+    document.getElementById('loc-path-s2').textContent='📁 Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub;
+    document.getElementById('loc-reason-s2').textContent='Ubicación seleccionada manualmente.';
+    document.getElementById('assets-base-path').textContent = 'Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub;
+    document.getElementById('nav-path').innerHTML = '<code style="background:var(--s3);padding:1px 5px;color:var(--y)">Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub+'</code>';
+  }
+}
+function copyAssetsPaths(){
+  const base = 'Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub;
+  const text = base + '/assets\n' + base + '/assets/images\n' + base + '/assets/documents';
+  const success = () => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ COPIADO';
+    setTimeout(()=>btn.textContent = orig, 2000);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(success).catch(()=>{if(execCopyFallback(text)) success();});
+  } else {
+    if(execCopyFallback(text)) success();
+  }
+}
+
+// ── STEP 3: PLAN GENERATION ─────────────────────────────────────────────────
+async function startPlanGeneration(){
+  try {
+  unlock(3);
+
+  // FIX v12: si la extracción de texto del PDF aún está corriendo, esperamos a que termine
+  // ANTES de lanzar la generación del plan. Si no, el plan se genera contra el placeholder.
+  if(S._textReady && S.text && S.text.startsWith('[PDF pendiente')){
+    document.getElementById('ltxt-plan').textContent = 'Extrayendo texto del PDF (10-30s)…';
+    try { await S._textReady; } catch(e){ console.warn('await S._textReady error:', e); }
+  }
+
+  // Tras la espera, si seguimos sin contenido válido, abortamos con un error claro.
+  const textOk = S.text && !S.text.startsWith('[PDF pendiente') && S.text.length >= 50;
+  if(!textOk){
+    document.getElementById('l-plan').classList.remove('on');
+    document.getElementById('c-plan').style.display='block';
+    document.getElementById('plan-count').textContent='0';
+    document.getElementById('plan-list').innerHTML = '<div class="errbox">⚠ <strong>No se pudo extraer texto del documento.</strong><br><br>Esto puede ocurrir con PDFs muy pesados, escaneados como imagen, o protegidos. Opciones:<br>• Vuelve al paso 1 y prueba a subir el archivo en formato <strong>DOCX</strong> o <strong>TXT</strong>.<br>• Si es un PDF escaneado, pásalo por OCR primero.<br>• Si era texto y solo tardó demasiado, pulsa <strong>VOLVER</strong> y haz clic en GENERAR de nuevo (el texto ya estará extraído).</div>';
+    document.getElementById('btn-go-generate').disabled = true;
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  S.blocks=[];
+  S.plan=[];
+
+  // Rotating UI messages during plan generation
+  const planMsgs=['Leyendo el documento completo…','Identificando bloques temáticos…','Proponiendo división óptima…','Calculando cobertura…'];
+  let mi=0; const iv=setInterval(()=>{
+    document.getElementById('ltxt-plan').textContent = planMsgs[mi++%planMsgs.length];
+  }, 1200);
+
+  // ── LOCATION call (Haiku, fast) ────────────────────────────────────────────
+  const locPromise = fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model: AI_MODEL, max_tokens:400,
+      system:`Analiza el documento y determina su ubicación en el Drive de Brooklyn Brain.
+ESTRUCTURA DEL DRIVE:
+EJE1. NEGOCIO: EJE1. 1 ADQUISICIÓN (VENTAS) | EJE1. 2 ENGAGEMENT (FIDELIZACIÓN) | EJE1. 3 BUSINESS DEVELOPMENT (Expansión)
+EJE2. CLIENTE: EJE2. 1 REQUERIMIENTOS | EJE2. 2 DERECHOS | EJE2. 3 OBLICACIONES
+EJE3. OPERACIONES: EJE3. 1 PROVEER ELEMENTOS | EJE3. 2 PROVEER SERVICIOS
+Responde SOLO JSON sin backticks: {"eje":"NEGOCIO|CLIENTE|OPERACIONES","subcarpeta":"nombre exacto","razonamiento":"1-2 frases"}`,
+      messages:[{role:'user',content:[
+        {type:'text',text:(S.text||'').substring(0,4000),cache_control:{type:'ephemeral'}},
+        {type:'text',text:`Tipo:${S.type} Título:${S.title} Owner:${S.owner}`}
+      ]}]
+    })
+  }).then(r=>r.json());
+
+  // ── PLAN call (Haiku, reads full document and proposes split) ──────────────
+  const baseTitle = (S.title||'Doc').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+  // Build context block from existing MDs (memory)
+  const ctxBlock = S.contextMds.length
+    ? `\n\nMDs EXISTENTES EN EL BRAIN (memoria — el usuario ha subido estos MDs como referencia):
+${S.contextMds.map((m,i)=>`
+[MD existente #${i+1}] ${m.name}
+Título: ${m.title}
+Keywords: ${m.keywords||'(sin keywords)'}
+Contenido completo:
+---
+${m.content.substring(0,8000)}
+---`).join('\n')}
+
+INSTRUCCIONES SOBRE LOS MDs EXISTENTES:
+1. ANTES de proponer el plan, evalúa qué partes del documento fuente YA están cubiertas por estos MDs existentes.
+2. NO dupliques contenido. Si el documento fuente repite información ya cubierta en un MD existente, ese contenido NO debería generar un MD nuevo salvo que aporte una perspectiva diferente.
+3. EVALÚA EL SOLAPAMIENTO POR MD EXISTENTE y rellena update_existing + auto_action:
+   - Si >70% del documento fuente está cubierto por UN solo MD existente (mismo eje/subcarpeta) → analiza primero el TIPO DE FUENTE antes de decidir:
+     a) Si el nuevo documento ES MÁS ESPECÍFICO que el existente (p.ej. el existente extrae ese tema de un manual general, y el nuevo es un manual dedicado exclusivamente a ese tema) → auto_action:"COEXISTIR". El existente cubre el tema a nivel estratégico/general; el nuevo lo desarrolla a nivel operativo/detallado. Ambos tienen valor distinto para la IA. Genera un suffix diferenciador en PascalCase.
+     b) Si el nuevo documento es una versión actualizada/mejorada del mismo nivel de detalle → auto_action:"REEMPLAZAR". El suffix debe coincidir exactamente con el existente.
+   - Si solapamiento parcial (30-70%) → divide: items con update_existing para las partes que solapan + items nuevos (auto_action:"NUEVO") para lo realmente nuevo.
+   - Si <30% solapamiento → trata el documento fuente como nuevo, update_existing:null, auto_action:"NUEVO".
+   - Si el contenido solapa temáticamente pero aporta una perspectiva diferente (p.ej. uno es conceptual y el otro operativo, o uno es para HQ y el otro para clubes) → update_existing con el MD relacionado, auto_action:"COEXISTIR", y genera tú un suffix diferenciador en PascalCase.
+4. ⚠ REGLA CRÍTICA — EJE/SUBCARPETA: Si el MD existente vive en un eje o subcarpeta DIFERENTE al nuevo contenido, usa related_to en lugar de update_existing, y auto_action:"NUEVO". Dos MDs con el mismo tema pero distinto eje son documentos distintos que coexisten.`
+    : '';
+
+  const planPromise = fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model: AI_MODEL, max_tokens:6000,
+      system:`Eres el arquitecto de conocimiento de Brooklyn Brain (Brooklyn Fitboxing, BFI).
+
+Tu tarea: dado un documento fuente, proponer cómo dividirlo en MDs temáticos para una base de conocimiento que alimenta bots de IA.
+
+⚠ REGLA CRÍTICA — COBERTURA COMPLETA:
+Antes de proponer la división, RECORRE EL DOCUMENTO COMPLETO de principio a fin. Identifica TODOS los temas, desde la primera sección hasta la última. Un documento de marketing típico de BFI puede cubrir: funnel, ciclo del cambio, mensajes por etapa, messy middle, web offers, promoción, acciones de marketing central, marketing local, afiliados (con sus subtipos: influencers, ambassadors, partners locales, partners globales), gestión del programa (portal, solicitudes, analytics, conversiones, comisiones), referidos (I Love BF, Regala BF, Free Trial), eventos locales, street marketing, materiales, posicionamiento local (Partoo, reseñas), social media, etc. NO OMITAS NINGUNA PARTE.
+
+Tu plan DEBE cubrir el 100% del documento. Si el documento tiene 20 secciones temáticas distintas, tu plan debe reflejar todas esas 20 (posiblemente agrupadas en menos MDs por afinidad, pero ninguna se queda fuera).
+
+REGLAS DE DIVISIÓN:
+- Cada MD: 600-1500 palabras (texto denso, 2-5 minutos de lectura).
+- Si una sección del fuente cabe sola en ese rango → 1 MD.
+- Si varias secciones cortas tratan el MISMO tema → agrúpalas en 1 MD.
+- Si una sección es muy larga (>1500 palabras) → divídela en 2+ MDs.
+- Documentos cortos (<2000 palabras totales) → puede quedar UN SOLO MD sin dividir.
+- Para manuales extensos apunta a 10-15 MDs. NO te quedes en 3-4 MDs si el documento tiene más temas.
+
+CRITERIO DE AGRUPACIÓN:
+Agrupa por TEMA conceptual, no por orden. Si el documento trata un mismo tema en 3 zonas separadas, se juntan. Si dos secciones adyacentes tratan temas distintos, se separan.
+
+NAMING CONVENTION:
+Cada MD lleva nombre: TIPO_BaseTítulo_SuffixTemático.md
+- TIPO y BaseTítulo vienen dados (no los cambies).
+- SuffixTemático: palabra o palabras clave (ej: "Funnel", "Afiliados", "Partners_Globales"). En PascalCase con guiones bajos si hay varias palabras.
+- Si es UN solo MD (documento corto), sin sufijo: TIPO_BaseTítulo.md
+
+VALIDACIÓN FINAL ANTES DE RESPONDER:
+Relee la última página del documento. ¿Está cubierta por algún MD de tu plan? Si no, añade los MDs que falten. NO RESPONDAS hasta haber validado que cubres del principio al final.
+
+RESPUESTA:
+SOLO JSON, sin backticks, con esta forma:
+{
+  "plan": [
+    {
+      "suffix": "Funnel",
+      "title": "Funnel de Venta",
+      "description": "Descripción breve de 1 frase sobre qué cubre este MD",
+      "sections_from_source": ["Funnel de Venta", "Definición de etapas", "Fases de riesgo"],
+      "estimated_words": 900,
+      "update_existing": null,
+      "overlap_note": "",
+      "related_to": null,
+      "auto_action": "NUEVO"
+    },
+    ...
+  ],
+  "rationale": "1-2 frases explicando la lógica global de la división",
+  "memory_analysis": "Si había MDs existentes, 1-2 frases explicando qué solapamientos detectaste y cómo los manejas. Si no había, déjalo vacío."
+}
+
+CAMPOS ESPECIALES:
+- update_existing: nombre EXACTO del archivo MD existente que este item solapa, o null si es completamente nuevo. Se rellena cuando detectas solapamiento temático, independientemente de la acción que decidas tomar.
+- overlap_note: si update_existing no es null, breve descripción (1 frase) de qué añade/mejora respecto al existente. Si es null, deja "".
+- related_to: nombre EXACTO del archivo MD existente con el que hay solapamiento temático pero EJE o SUBCARPETA diferente. Solo se rellena cuando hay solapamiento pero en eje distinto. Si no aplica, deja null.
+- auto_action: TÚ decides la acción óptima para el Brain. Usa esta lógica estricta:
+  • "REEMPLAZAR" → cuando el nuevo contenido mejora/actualiza directamente el MD existente Y están en el mismo eje/subcarpeta. El MD existente quedaría obsoleto. El suffix del nuevo MD debe coincidir exactamente con el del existente.
+  • "COEXISTIR" → cuando el nuevo contenido añade una perspectiva DIFERENTE sobre el mismo tema (p.ej. el existente es teórico y el nuevo es operativo, o el existente es para HQ y el nuevo para clubes). Ambos son válidos simultáneamente. El nuevo MD necesita un suffix propio diferente al existente — genera tú ese suffix en PascalCase.
+  • "NUEVO" → cuando no hay solapamiento con ningún MD existente (update_existing:null). Siempre es "NUEVO" en ese caso.
+  IMPORTANTE: si update_existing es null, auto_action DEBE ser "NUEVO". Si update_existing tiene valor, decide entre "REEMPLAZAR" o "COEXISTIR" según la lógica de arriba.
+
+Si el documento es corto y no hace falta dividir, devuelve "plan" con UN SOLO elemento con suffix:"" (vacío).`,
+      messages:[{role:'user',content:[
+        {type:'text',text:'DOCUMENTO FUENTE COMPLETO:\n---\n'+(S.text||'').substring(0,200000)+'\n---',cache_control:{type:'ephemeral'}},
+        {type:'text',text:`TIPO: ${S.type}\nBASE_TITULO: ${baseTitle}${ctxBlock}\n\nRecuerda: RECORRE EL DOCUMENTO COMPLETO antes de proponer el plan. No te quedes en las primeras secciones. Propón un plan que cubra del principio al final. ${S.contextMds.length?'Evalúa el solapamiento con los MDs existentes y marca update_existing donde corresponda.':''} Responde SOLO JSON.`}
+      ]}]
+    })
+  }).then(r=>r.json());
+
+  // ── Wait for both ─────────────────────────────────────────────────────────
+  let locOk=false;
+  try{
+    const locRes = await locPromise;
+    const raw=(locRes.content||[]).map(b=>b.text||'').join('').trim();
+    const loc = parseLocationJsonResilient(raw);
+    S.eje=loc.eje||'NEGOCIO';
+    S.sub=SUBS[S.eje]?.includes(loc.subcarpeta)?loc.subcarpeta:SUBS[S.eje][0];
+    S.locReason = loc.razonamiento || '—';
+    locOk = true;
+  }catch(e){
+    S.eje='NEGOCIO'; S.sub=SUBS.NEGOCIO[0];
+    S.locReason = 'Error al determinar — usando valor por defecto';
+  }
+
+  try{
+    const planRes = await planPromise;
+    if(planRes.error) throw new Error(planRes.error.message);
+    const raw=(planRes.content||[]).map(b=>b.text||'').join('').trim();
+    const planData = parsePlanJsonResilient(raw);
+    S.plan = (planData.plan||[]).map((p,i)=>({
+      id: 'p_'+i+'_'+Date.now(),
+      suffix: (p.suffix||'').trim(),
+      title: (p.title||'').trim() || 'Sin título',
+      description: (p.description||'').trim(),
+      sections: Array.isArray(p.sections_from_source) ? p.sections_from_source : [],
+      estimatedWords: p.estimated_words || 800,
+      updateExisting: (p.update_existing && typeof p.update_existing==='string') ? p.update_existing.trim() : null,
+      overlapNote: (p.overlap_note||'').trim(),
+      relatedTo: (p.related_to && typeof p.related_to==='string') ? p.related_to.trim() : null,
+      // auto_action: decided by AI. Validate it's one of the 3 valid values; fallback to NUEVO if missing/invalid.
+      updateAction: (['REEMPLAZAR','COEXISTIR','NUEVO'].includes(p.auto_action)) ? p.auto_action : (p.update_existing ? 'REEMPLAZAR' : 'NUEVO')
+    }));
+    S.planRationale = planData.rationale || '';
+    S.memoryAnalysis = planData.memory_analysis || '';
+
+    // FIX v24: si el parse no lanzó excepción pero devolvió plan vacío, activar fallback manualmente
+    if(!S.plan.length){
+      console.warn('Plan parsed OK but returned 0 items — activating fallback. Raw response:', raw.substring(0,500));
+      S.plan = [{
+        id: 'p_fallback_'+Date.now(),
+        suffix: '',
+        title: S.title,
+        description: 'Documento completo (el plan automático devolvió 0 MDs — se generará como un único MD). Puedes editar el título y añadir más MDs manualmente.',
+        sections: [],
+        estimatedWords: Math.min(2000, Math.ceil((S.text||'').length/6)),
+        updateExisting: null,
+        overlapNote: '',
+        relatedTo: null,
+        updateAction: 'NUEVO'
+      }];
+      S.planRationale = '⚠ La IA devolvió un plan vacío. Se ha creado un MD de fallback con el documento completo. Puedes añadir más MDs manualmente con el botón "+ AÑADIR MD MANUAL".';
+    }
+  }catch(e){
+    // Fallback: single MD
+    console.warn('Plan generation failed, falling back to single MD:', e);
+    S.plan = [{
+      id: 'p_fallback_'+Date.now(),
+      suffix: '',
+      title: S.title,
+      description: 'Documento completo (el plan automático falló — se generará como un único MD)',
+      sections: [],
+      estimatedWords: Math.min(2000, Math.ceil((S.text||'').length/6)),
+      updateExisting: null,
+      overlapNote: '',
+      relatedTo: null,
+      updateAction: 'NUEVO'
+    }];
+    S.planRationale = '⚠ No se pudo generar plan automático. Puedes editar manualmente la lista de MDs o generar con un único archivo.';
+  }
+
+  clearInterval(iv);
+
+  // ── Render plan UI ────────────────────────────────────────────────────────
+  document.getElementById('l-plan').classList.remove('on');
+  document.getElementById('c-plan').style.display='block';
+  document.getElementById('loc-eje').textContent=EJE_FULL[S.eje];
+  document.getElementById('loc-path').textContent='📁 Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub;
+  document.getElementById('loc-reason').textContent=S.locReason;
+  renderPlanList();
+  unlock(3);
+  } catch(e) {
+    console.error('startPlanGeneration error:', e);
+    alert('Error generando plan: '+e.message);
+    document.getElementById('l-plan').classList.remove('on');
+    document.getElementById('c-plan').style.display='block';
+    document.getElementById('plan-list').innerHTML = '<div class="errbox">✗ Error interno: '+esc(e.message)+'</div>';
+  }
+}
+
+// ── PLAN: Resilient JSON parser ─────────────────────────────────────────────
+// ── DETECCIÓN DE TYPOS (INC-2) ──────────────────────────────────────────────
+// Detecta palabras sospechosas por patrón: sin vocales O >5 consonantes seguidas
+// NO valida si la palabra existe en diccionario (es un heurístico simple)
+function detectSuspiciousWords(text){
+  if(!text) return [];
+  
+  // Extraer palabras: remove accents, lowercase, keep only alphanumeric + underscore
+  const words = text
+    .toLowerCase()
+    .replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i')
+    .replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n')
+    .split(/[^a-z0-9_]+/)
+    .filter(w => w.length > 4); // solo palabras >4 caracteres
+  
+  const suspicious = [];
+  words.forEach(word => {
+    const vowels = ['a','e','i','o','u'];
+    const hasVowel = vowels.some(v => word.includes(v));
+    
+    if(!hasVowel){
+      // Palabra sin vocales
+      if(!suspicious.includes(word)) suspicious.push(word);
+    } else {
+      // Detectar >5 consonantes seguidas sin vocal
+      let consonantCount = 0;
+      for(let char of word){
+        if(vowels.includes(char)){
+          consonantCount = 0; // reset
+        } else {
+          consonantCount++;
+          if(consonantCount > 5){
+            if(!suspicious.includes(word)) suspicious.push(word);
+            break;
+          }
+        }
+      }
+    }
+  });
+  
+  return suspicious;
+}
+
+function parsePlanJsonResilient(raw){
+  if(!raw) return {plan:[]};
+  let text = raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+  try { return JSON.parse(text); } catch(e){}
+  const m = text.match(/\{[\s\S]*\}/);
+  if(m){
+    try { return JSON.parse(m[0]); } catch(e){}
+    const cleaned = m[0]
+      .replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'")
+      .replace(/,\s*([\]}])/g, '$1').replace(/[\r\n\t]+/g, ' ');
+    try { return JSON.parse(cleaned); } catch(e){}
+  }
+  return {plan:[]};
+}
+
+// ── PLAN: Render the editable list of proposed MDs ──────────────────────────
+function renderPlanList(){
+  const list = document.getElementById('plan-list');
+  document.getElementById('plan-count').textContent = S.plan.length;
+  const baseTitle = (S.title||'Doc').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+  // Memory analysis banner (if context MDs were used)
+  let memBanner = '';
+  if(S.contextMds.length){
+    const replaceCount = S.plan.filter(p=>p.updateExisting && p.updateAction==='REEMPLAZAR').length;
+    const coexistCount = S.plan.filter(p=>p.updateExisting && p.updateAction==='COEXISTIR').length;
+    if(replaceCount > 0 || coexistCount > 0){
+      const parts = [];
+      if(replaceCount) parts.push(`<span style="color:var(--orange)">${replaceCount} reemplaza${replaceCount>1?'n':''}</span>`);
+      if(coexistCount) parts.push(`<span style="color:var(--blue)">${coexistCount} coexiste${coexistCount>1?'n':''}</span>`);
+      memBanner = `<div style="padding:11px 14px;border-left:3px solid var(--orange);background:rgba(255,140,0,.06);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:14px;font-family:'DM Sans',sans-serif">
+        🧠 <strong style="color:var(--t1)">Memoria:</strong> ${parts.join(' · ')} con MDs existentes.${S.memoryAnalysis?`<br><span style="color:var(--t3)">${esc(S.memoryAnalysis)}</span>`:''}
+      </div>`;
+    } else if(S.memoryAnalysis){
+      memBanner = `<div style="padding:11px 14px;border-left:3px solid var(--blue);background:rgba(74,158,255,.06);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:14px;font-family:'DM Sans',sans-serif">
+        🧠 <strong style="color:var(--blue)">Análisis de memoria:</strong> ${esc(S.memoryAnalysis)}
+      </div>`;
+    }
+  }
+  
+  // Detección de typos (INC-2)
+  const allText = [S.title, ...S.plan.map(p => p.title + ' ' + p.suffix)].join(' ');
+  const suspiciousWords = detectSuspiciousWords(allText);
+  const typosBanner = suspiciousWords.length > 0
+    ? `<div style="padding:11px 14px;border-left:3px solid var(--orange);background:rgba(255,140,0,.07);font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:14px;font-family:'DM Sans',sans-serif">
+        <strong style="color:var(--orange)">⚠️ ADVERTENCIA: Palabras sospechosas detectadas</strong><br>
+        <span style="color:var(--t2);margin-top:4px;display:block">Patrones inusuales en los nombres de archivo:</span>
+        <div style="margin-top:6px;padding:8px 10px;background:var(--s1);border:1px solid var(--b1);border-radius:3px;font-family:'Space Mono',monospace;font-size:10px;color:var(--yd)">
+          ${suspiciousWords.map(w => '• '+esc(w)).join('<br>')}
+        </div>
+        <span style="color:var(--t3);margin-top:6px;display:block;font-size:10px">Pueden ser typos o palabras válidas sin vocales. Si son correctas, continúa normalmente.</span>
+      </div>`
+    : '';
+  
+  list.innerHTML = memBanner + typosBanner + S.plan.map((p,i)=>{
+    const isUpdate = !!p.updateExisting;
+    const isRelated = !!p.relatedTo && !isUpdate;
+    const filename = isUpdate && p.updateAction === 'REEMPLAZAR'
+      ? p.updateExisting
+      : (S.type + '_' + baseTitle + (p.suffix ? '_'+p.suffix : '') + '.md');
+
+    // UPDATE badge — shows AI decision, with collapsible override
+    const updateBadge = isUpdate ? `
+      <div style="padding:8px 10px;background:${p.updateAction==='REEMPLAZAR'?'rgba(255,140,0,.08)':p.updateAction==='COEXISTIR'?'rgba(74,158,255,.08)':'rgba(0,212,126,.08)'};border:1px dashed ${p.updateAction==='REEMPLAZAR'?'var(--orange)':p.updateAction==='COEXISTIR'?'var(--blue)':'var(--green)'};margin-bottom:6px">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:${p.updateAction==='REEMPLAZAR'?'var(--orange)':p.updateAction==='COEXISTIR'?'var(--blue)':'var(--green)'};margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span>${p.updateAction==='REEMPLAZAR'?'🔄':'🔀'} SOLAPA CON: <strong>${esc(p.updateExisting)}</strong></span>
+          <span style="background:${p.updateAction==='REEMPLAZAR'?'var(--orange)':p.updateAction==='COEXISTIR'?'var(--blue)':'var(--green)'};color:#000;padding:1px 8px;font-size:8px;font-weight:700;letter-spacing:.08em">${p.updateAction==='REEMPLAZAR'?'IA → REEMPLAZAR':p.updateAction==='COEXISTIR'?'IA → COEXISTIR':'IA → NUEVO'}</span>
+        </div>
+        ${p.overlapNote?`<div style="color:var(--t2);font-family:'DM Sans',sans-serif;font-size:10px;margin-bottom:5px">${esc(p.overlapNote)}</div>`:''}
+        <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--t3);margin-bottom:5px">${p.updateAction==='REEMPLAZAR'?'→ Sobreescribe el MD existente. Mismo nombre de archivo.':p.updateAction==='COEXISTIR'?'→ Ambos MDs conviven. Se crea un archivo nuevo con nombre diferente.':'→ Nuevo MD independiente.'}</div>
+        <details style="margin-top:4px">
+          <summary style="font-family:'Space Mono',monospace;font-size:8px;color:var(--t3);cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:4px">▸ cambiar decisión</summary>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px">
+            ${['REEMPLAZAR','COEXISTIR','NUEVO'].map(action=>`<button onclick="setPlanAction('${p.id}','${action}')" style="font-family:'Space Mono',monospace;font-size:9px;padding:3px 10px;border:1px solid;cursor:pointer;background:${p.updateAction===action?(action==='REEMPLAZAR'?'var(--orange)':action==='COEXISTIR'?'var(--blue)':'var(--green)'):'transparent'};border-color:${p.updateAction===action?(action==='REEMPLAZAR'?'var(--orange)':action==='COEXISTIR'?'var(--blue)':'var(--green)'):'var(--b2)'};color:${p.updateAction===action?'#000':'var(--t3)'};">${action==='REEMPLAZAR'?'🔄 REEMPLAZAR':action==='COEXISTIR'?'🔀 COEXISTIR':'✨ CREAR NUEVO'}</button>`).join('')}
+          </div>
+        </details>
+      </div>` : '';
+
+    // RELATED badge (eje diferente, no UPDATE)
+    const relatedBadge = isRelated ? `
+      <div style="padding:6px 10px;background:rgba(74,158,255,.07);border:1px dashed var(--blue);font-family:'Space Mono',monospace;font-size:9px;color:var(--blue);margin-bottom:6px">
+        🔗 RELACIONADO CON: <strong>${esc(p.relatedTo)}</strong><br>
+        <span style="color:var(--t3);font-family:'DM Sans',sans-serif;font-size:10px;font-weight:400">Eje/subcarpeta diferente — se crea como MD nuevo independiente.</span>
+      </div>` : '';
+
+    return `
+    <div style="padding:12px 14px;background:var(--s1);border:1px solid ${isUpdate?'var(--orange)':isRelated?'var(--blue)':'var(--b1)'};display:flex;flex-direction:column;gap:6px" id="plan-${p.id}">
+      ${updateBadge}${relatedBadge}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--yd);margin-bottom:3px">MD #${i+1}${isUpdate?' · UPDATE':isRelated?' · RELACIONADO':''}</div>
+          ${isUpdate && p.updateAction==='REEMPLAZAR' ? `
+          <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--orange);font-weight:700;margin-bottom:4px">${esc(filename)}</div>
+          ` : `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t3);white-space:nowrap">${S.type}_${baseTitle}_</span>
+            <input type="text" value="${esc(p.suffix)}" placeholder="Sufijo" oninput="updatePlanSuffix('${p.id}', this.value)" style="flex:1;background:var(--s3);border:1px solid var(--b1);color:var(--y);padding:3px 6px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;min-width:80px" />
+            <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t3)">.md</span>
+          </div>`}
+          <input type="text" value="${esc(p.title)}" placeholder="Título humano" oninput="updatePlanTitle('${p.id}', this.value)" style="width:100%;background:transparent;border:none;color:var(--t1);padding:2px 0;font-size:13px;font-weight:600;outline:none;border-bottom:1px dashed var(--b1)" />
+          <textarea placeholder="Descripción breve" oninput="updatePlanDescription('${p.id}', this.value)" style="width:100%;background:transparent;border:none;color:var(--t2);padding:6px 0 0 0;font-size:11px;outline:none;resize:vertical;min-height:32px;line-height:1.5;font-family:inherit">${esc(p.description)}</textarea>
+          ${p.sections.length ? `<div style="margin-top:6px;font-size:10px;color:var(--t3);font-family:'Space Mono',monospace;line-height:1.7">Cubre: <span style="color:var(--t2)">${p.sections.map(s=>esc(s)).join(' · ')}</span></div>` : ''}
+          <div style="margin-top:4px;font-size:9px;color:var(--t3);font-family:'Space Mono',monospace">~${p.estimatedWords} palabras</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button onclick="movePlanItem('${p.id}',-1)" title="Subir" style="background:var(--s3);border:1px solid var(--b1);color:var(--t2);width:24px;height:22px;cursor:pointer;font-size:10px" ${i===0?'disabled':''}>▲</button>
+          <button onclick="movePlanItem('${p.id}',1)" title="Bajar" style="background:var(--s3);border:1px solid var(--b1);color:var(--t2);width:24px;height:22px;cursor:pointer;font-size:10px" ${i===S.plan.length-1?'disabled':''}>▼</button>
+          <button onclick="removePlanItem('${p.id}')" title="Eliminar" style="background:var(--s3);border:1px solid var(--red);color:var(--red);width:24px;height:22px;cursor:pointer;font-size:12px">×</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  // Enable/disable generate button
+  document.getElementById('btn-go-generate').disabled = S.plan.length === 0;
+}
+
+function updatePlanSuffix(id, val){
+  const p = S.plan.find(x=>x.id===id);
+  if(p){ p.suffix = val.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,''); }
+}
+function updatePlanTitle(id, val){
+  const p = S.plan.find(x=>x.id===id);
+  if(p){ p.title = val; }
+}
+function updatePlanDescription(id, val){
+  const p = S.plan.find(x=>x.id===id);
+  if(p){ p.description = val; }
+}
+function setPlanAction(id, action){
+  const p = S.plan.find(x=>x.id===id);
+  if(!p) return;
+  p.updateAction = action;
+  // If COEXISTIR or NUEVO, unlock suffix editing by clearing updateExisting effect on filename
+  renderPlanList();
+}
+function movePlanItem(id, dir){
+  const i = S.plan.findIndex(x=>x.id===id);
+  const j = i + dir;
+  if(i<0 || j<0 || j>=S.plan.length) return;
+  [S.plan[i], S.plan[j]] = [S.plan[j], S.plan[i]];
+  renderPlanList();
+}
+function removePlanItem(id){
+  if(S.plan.length <= 1){
+    alert('Debe haber al menos 1 MD. Si quieres cancelar, usa VOLVER.');
+    return;
+  }
+  S.plan = S.plan.filter(x=>x.id!==id);
+  renderPlanList();
+}
+function addPlanItem(){
+  S.plan.push({
+    id: 'p_manual_'+Date.now(),
+    suffix: 'Nuevo',
+    title: 'Nuevo MD',
+    description: '',
+    sections: [],
+    estimatedWords: 800,
+    updateExisting: null,
+    overlapNote: '',
+    relatedTo: null,
+    updateAction: 'NUEVO'
+  });
+  renderPlanList();
+}
+
+// ── STEP 4: START GENERATION (parallel, batched) ────────────────────────────
+async function startGeneration(){
+  if(!S.plan || S.plan.length === 0){
+    console.warn('startGeneration: S.plan vacío, abortando.');
+    document.getElementById('gen-total').textContent = '0';
+    document.getElementById('gen-done').textContent = '0';
+    return;
+  }
+  unlock(3);
+  const list = document.getElementById('gen-list');
+  const baseTitle = (S.title||'Doc').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+  S.blocks = S.plan.map(p=>({
+    planId: p.id,
+    filename: (p.updateExisting && p.updateAction === 'REEMPLAZAR')
+      ? p.updateExisting
+      : (S.type + '_' + baseTitle + (p.suffix?'_'+p.suffix:'') + '.md'),
+    title: p.title,
+    content: '',
+    status: 'pending',
+    error: null,
+    isUpdate: !!(p.updateExisting && p.updateAction === 'REEMPLAZAR'),
+    isRelated: !!p.relatedTo,
+    updateAction: p.updateAction || 'REEMPLAZAR'
+  }));
+  document.getElementById('gen-total').textContent = S.blocks.length;
+  document.getElementById('gen-done').textContent = 0;
+  document.getElementById('btn-go-result').disabled = true;
+
+  list.innerHTML = S.blocks.map((b,i)=>`
+    <div style="padding:10px 14px;background:var(--s1);border:1px solid ${b.isUpdate?'var(--orange)':b.isRelated?'var(--blue)':'var(--b1)'}" id="gen-item-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:${b.isUpdate?'var(--orange)':b.isRelated?'var(--blue)':'var(--t1)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.isUpdate?'🔄 ':b.isRelated?'🔗 ':''}${esc(b.filename)}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px">${esc(b.title)}${b.isUpdate?' · REEMPLAZA':b.isRelated?' · NUEVO (relacionado)':''}</div>
+        </div>
+        <div id="gen-status-${i}" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t3);white-space:nowrap">⏳ EN COLA</div>
+      </div>
+      <div style="margin-top:6px;height:3px;background:var(--s3);overflow:hidden"><div id="gen-bar-${i}" style="height:100%;background:var(--y);width:0%;transition:width 0.3s"></div></div>
+    </div>
+  `).join('');
+
+  // Build image substitution instructions (shared across all MDs — each block will pick what it needs)
+  const imgInstrBase = buildImgInstructions();
+
+  // Batch runner: first call is sequential (to create the prompt cache),
+  // then remaining calls run up to 3 concurrent (reusing cached source document at ~10% input cost).
+  const CONCURRENCY = 3;
+  let idx = 0;
+  let completed = 0;
+  const runOne = async (myIdx) => {
+    const block = S.blocks[myIdx];
+    const plan = S.plan.find(p=>p.id===block.planId);
+    document.getElementById('gen-status-'+myIdx).textContent = '◉ GENERANDO';
+    document.getElementById('gen-status-'+myIdx).style.color = 'var(--y)';
+    document.getElementById('gen-bar-'+myIdx).style.width = '30%';
+    try{
+      const content = await generateSingleMd(plan, block.filename, imgInstrBase);
+      block.content = content;
+      block.status = 'done';
+      document.getElementById('gen-status-'+myIdx).textContent = '✓ COMPLETADO';
+      document.getElementById('gen-status-'+myIdx).style.color = 'var(--green)';
+      document.getElementById('gen-bar-'+myIdx).style.width = '100%';
+    }catch(e){
+      block.status = 'error';
+      block.error = e.message;
+      document.getElementById('gen-status-'+myIdx).textContent = '✗ ERROR';
+      document.getElementById('gen-status-'+myIdx).style.color = 'var(--red)';
+      document.getElementById('gen-bar-'+myIdx).style.width = '100%';
+      document.getElementById('gen-bar-'+myIdx).style.background = 'var(--red)';
+    }
+    completed++;
+    document.getElementById('gen-done').textContent = completed;
+  };
+
+  // Run the first MD alone to warm the prompt cache, then run the rest in parallel batches.
+  if(S.blocks.length > 0){
+    await runOne(idx++);
+  }
+  async function worker(){
+    while(idx < S.blocks.length){
+      const myIdx = idx++;
+      await runOne(myIdx);
+    }
+  }
+  const workers = [];
+  for(let k=0; k<Math.min(CONCURRENCY, S.blocks.length - 1); k++){ workers.push(worker()); }
+  await Promise.all(workers);
+
+  // Post-process: map images to blocks based on content
+  mapImagesToBlocks();
+  // Apply skipped-image post-processing to each block
+  S.blocks.forEach(b=>{
+    if(b.status !== 'done') return;
+    b.content = postProcessSkippedImages(b.content);
+  });
+
+  document.getElementById('btn-go-result').disabled = false;
+  unlock(5);
+  renderResultStep4();
+  // Build rows in background — the button in step 4 will enable when ready
+  sendToGlosarioAuto(false).catch(e=>{
+    console.error('Auto-glosario failed:', e);
+  });
+}
+
+function buildImgInstructions(){
+  if(!S.imgs.length) return '';
+  let instr = '\n\nIMAGENES — INSTRUCCIONES EXACTAS (SIGUE LITERALMENTE):\n';
+  instr += 'El documento fuente contiene imágenes con placeholders tipo "imagen_placeholder_N".\n';
+  instr += 'REGLA CRÍTICA: OMITIR COMPLETAMENTE cualquier imagen donde aparezcan rostros, caras, o personas — ni siquiera como placeholder.\n\n';
+  instr += 'Para imágenes SIN personas:\n';
+  S.imgs.forEach(img=>{
+    if(img.skipped){
+      const desc=(img.alt||'').trim();
+      instr += desc
+        ? `- "${img.ph}" → *[${desc}]*  (cursiva, SIN ![]() ni link)\n`
+        : `- "${img.ph}" → ELIMINAR del texto completamente\n`;
+    } else if(img.link){
+      instr += `- "${img.ph}" → ![${img.alt||img.ph}](${img.link}) — POSICIONAR INMEDIATAMENTE BAJO EL ## TÍTULO de la sección a la que pertenece\n`;
+    } else {
+      instr += `- "${img.ph}" → ![${img.alt||img.ph}](${img.ph}) — POSICIONAR BAJO EL ## TÍTULO\n`;
+    }
+  });
+  instr += '\nREGLAS DE POSICIONAMIENTO:\n1. Cada imagen va en la línea SIGUIENTE después de su ## Título de sección (sin párrafos intermedios)\n2. La descripción debe ser CONCISA (máx 8-10 palabras)\n3. Si una imagen contiene personas/rostros, OMITIRLA COMPLETAMENTE (ni placeholder, ni nada)\n4. Solo incluir imágenes que TEMÁTICAMENTE correspondan a este MD. Si pertenecen a otro tema, no incluirlas.';
+  return instr;
+}
+
+function postProcessSkippedImages(content){
+  S.imgs.forEach(img=>{
+    if(!img.skipped) return;
+    const desc = (img.alt||'').trim();
+    const replacement = desc ? `*[${desc}]*` : '';
+    // Match new format: alt (url)
+    content = content.replace(new RegExp(escR(img.alt||img.ph)+'\\s*\\([^)]+\\)', 'g'), replacement);
+    // Match old markdown format in case AI used it anyway
+    content = content.replace(new RegExp('!\\[[^\\]]*\\]\\('+escR(img.ph)+'\\)(\\s*<!--[^>]*-->)?', 'g'), replacement);
+    content = content.replace(new RegExp('\\b'+escR(img.ph)+'\\b', 'g'), replacement);
+    if(!replacement) content = content.replace(/\n{3,}/g, '\n\n');
+  });
+  return content;
+}
+
+function mapImagesToBlocks(){
+  // Each image goes to the first block whose content references it (by placeholder or by alt text keyword)
+  S.imgs.forEach(img=>{
+    img.bi = -1;
+    for(let i=0; i<S.blocks.length; i++){
+      const c = S.blocks[i].content || '';
+      if(c.includes(img.ph) || (img.link && c.includes(img.link))){
+        img.bi = i;
+        return;
+      }
+    }
+    // Fallback: first block
+    if(img.bi === -1 && S.blocks.length) img.bi = 0;
+  });
+}
+
+// ── Generate a SINGLE MD for a plan item ────────────────────────────────────
+async function generateSingleMd(plan, filename, imgInstr){
+  // If this is an UPDATE of an existing MD, find its content
+  const existingMd = plan.updateExisting
+    ? S.contextMds.find(m => m.name === plan.updateExisting)
+    : null;
+
+  const updateInstructions = existingMd
+    ? `
+
+MODO ACTUALIZACIÓN — ESTE MD REEMPLAZA UNO EXISTENTE:
+Estás generando una VERSIÓN MEJORADA del MD existente "${existingMd.name}". Tu output sustituirá completamente al MD existente, así que:
+1. PRESERVA todo el contenido valioso del MD existente (estructura, tablas, wikilinks, callouts).
+2. ENRIQUECE con los detalles nuevos del documento fuente (datos concretos, matices, ejemplos).
+3. NO inventes detalles que no estén ni en el existente ni en el fuente.
+4. Si el existente y el fuente contradicen algo, prefiere el fuente (es la información más reciente).
+5. Mantén la misma estructura general del existente salvo que el fuente justifique un cambio claro.
+
+MD EXISTENTE (contenido a mejorar):
+---
+${existingMd.content}
+---`
+    : '';
+
+  const otherContextNote = (S.contextMds.length && !existingMd)
+    ? `
+
+OTROS MDs YA EN EL BRAIN (no duplicar su contenido):
+${S.contextMds.map(m=>`- ${m.name}: ${m.title} [keywords: ${m.keywords||'—'}]`).join('\n')}
+NO repitas contenido que esos MDs ya cubren. Asume que el lector tiene acceso a ellos.`
+    : '';
+
+  const SYSTEM = `Eres el editor de conocimiento de Brooklyn Brain para Xcellence (Brooklyn Fitboxing).
+Generas MDs temáticos cortos (600-1500 palabras) para una base de conocimiento que alimenta bots de IA.
+
+PRINCIPIOS:
+1. ENFOQUE TEMÁTICO: Cubres SOLO el tema que te asignan. No incluyas contenido de otros temas del documento.
+2. FIDELIDAD: Cada dato del MD viene del documento fuente (o del MD existente si es un update). No inventes.
+3. DENSIDAD: Texto denso, términos consistentes, define acrónimos la primera vez.
+4. MD AUTÓNOMO: Este MD debe entenderse por sí solo sin depender de otros MDs.
+
+ESTRUCTURA OBLIGATORIA (sin frontmatter YAML — los metadatos viven en el Sheet Glosario):
+
+KEYWORDS: [8-15 keywords reales separadas por comas, específicas de este tema]
+
+# ${plan.title}
+
+---
+
+## Índice
+1. [Sección](#anchor)
+[lista solo si el MD tiene 3+ secciones; omitir en MDs cortos]
+
+---
+
+[contenido con las secciones del tema]
+
+FORMATO:
+- ## secciones, ### subsecciones
+- **negrita** para conceptos clave, *cursiva* para énfasis secundario
+- Listas y tablas Markdown cuando corresponda
+- Wikilinks: [[Término]] para conceptos referenciables
+- Callouts: > [!NOTE], > [!WARNING], > [!TIP]
+- Solo Markdown puro (sin HTML inline)
+
+IMÁGENES — INSTRUCCIONES CRÍTICAS:
+1. Las imágenes van INMEDIATAMENTE después del ## Título de la sección a la que pertenecen
+2. OMITIR COMPLETAMENTE cualquier imagen donde aparezcan rostros o personas — ni descripción, ni placeholder
+3. USAR SIEMPRE formato Markdown estricto: ![descripción concisa](url)
+4. La descripción dentro de los corchetes debe ser CONCISA (máx 8-10 palabras) y describir SOLO el contenido visual relevante (diagramas, esquemas, pantallas, gráficos, no fotos con personas)
+5. PROHIBIDO usar HTML <img>, <p>, <div>, <span>, atributos style, class, width o cualquier etiqueta HTML. PROHIBIDO el formato "texto (url)" sin los corchetes Markdown.
+
+EJEMPLO CORRECTO: ![Diagrama del flujo de aprobación](https://drive.google.com/thumbnail?id=ABC123&sz=w1200)
+EJEMPLOS INCORRECTOS: <img src="..."> (HTML), texto (url) (sin corchetes), ![desc](url) <!-- nota --> (con HTML)${updateInstructions}${otherContextNote}${imgInstr}`;
+
+  const sectionsHint = plan.sections.length
+    ? `\nSECCIONES DEL DOCUMENTO FUENTE QUE DEBES CUBRIR EN ESTE MD:\n${plan.sections.map(s=>'- '+s).join('\n')}\n\nIGNORA el resto del documento fuente. Este MD es sobre "${plan.title}" y SOLO sobre eso.`
+    : '';
+
+  // The source document is sent as a cached content block. Anthropic caches it after the first call,
+  // and subsequent calls within ~5 minutes reuse the cached input at ~10% of the normal cost.
+  // This is crucial: for N MDs we'd otherwise re-send the same 100K-char document N times.
+  const sourceBlock = {
+    type: 'text',
+    text: `DOCUMENTO FUENTE COMPLETO (${(S.text||'').length.toLocaleString()} caracteres):\n---\n${(S.text||'').substring(0,100000)}\n---`,
+    cache_control: { type: 'ephemeral' }
+  };
+  const instructionBlock = {
+    type: 'text',
+    text: `Genera el MD "${filename}" sobre el tema: ${plan.title}.
+
+${plan.updateExisting ? '⚠ MODO ACTUALIZACIÓN: Este MD reemplaza el archivo existente '+plan.updateExisting+'. Lee el MD existente (en el system prompt) y mejóralo con la nueva información del documento fuente.\n' : ''}DESCRIPCIÓN DEL MD: ${plan.description || '(sin descripción)'}
+${plan.overlapNote ? 'NOTA SOBRE SOLAPAMIENTO: '+plan.overlapNote+'\n' : ''}EXTENSIÓN OBJETIVO: ~${plan.estimatedWords} palabras.${sectionsHint}
+
+Ahora genera el MD enfocado exclusivamente en el tema asignado.`
+  };
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: AI_MODEL, max_tokens:8000,
+      system: SYSTEM,
+      messages:[{role:'user', content: [sourceBlock, instructionBlock]}]
+    })
+  });
+  if(!resp.ok){
+    const errText = await resp.text().catch(()=>'');
+    throw new Error('HTTP '+resp.status+(errText?': '+errText.substring(0,200):''));
+  }
+  const d = await resp.json();
+  if(d.error) throw new Error(d.error.message);
+  let content = (d.content||[]).map(b=>b.text||'').join('').trim();
+  content = content.replace(/^```(?:markdown|md)?\n?/i,'').replace(/\n?```\s*$/i,'').trim();
+  if(!content) throw new Error('Respuesta vacía');
+  return content;
+}
+
+
+// Location manual override
+function toggleManualLoc(){const sec=document.getElementById('loc-manual-sec');sec.style.display=sec.style.display==='none'?'block':'none';}
+function selEje2(e){
+  S.eje=e;['NEGOCIO','CLIENTE','OPERACIONES'].forEach(x=>document.getElementById('e2-'+x)?.classList.remove('sel'));
+  document.getElementById('e2-'+e)?.classList.add('sel');
+  const sel=document.getElementById('sub2');sel.innerHTML='<option value="">Selecciona subcarpeta…</option>';
+  SUBS[e].forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+}
+function onSub2(){
+  S.sub=document.getElementById('sub2').value;
+  if(S.sub){document.getElementById('loc-path').textContent='📁 Brooklyn Brain / '+EJE_FULL[S.eje]+' / '+S.sub;document.getElementById('loc-reason').textContent='Ubicación seleccionada manualmente.';}
+}
+
+// ── STEP 5: UNIFIED RESULT (MD + image manager + copy/glosario) ──────────────
+function renderResultStep4(){
+  const wrap = document.getElementById('c5');
+  if(!S.blocks.length){
+    wrap.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div class="empty-t">Sin resultado</div><div class="empty-s">Vuelve al paso anterior y genera el Markdown.</div></div>';
+    return;
+  }
+
+  // Location banner
+  let html = '';
+  html += `<div style="padding:9px 13px;background:rgba(0,212,126,.07);border-left:3px solid var(--green);font-size:11px;color:var(--green);margin-bottom:14px;font-family:'Space Mono',monospace">📁 ${EJE_FULL[S.eje]} / ${S.sub}</div>`;
+
+  // Image panel (only if there are images)
+  if(S.imgs.length){
+    const active=activeImgs();
+    const pending=active.filter(img=>!img.link).length;
+    const skipped=S.imgs.length-active.length;
+    html += '<div style="margin-bottom:16px">';
+    if(pending>0){
+      html += `<div class="banner banner-orange" style="margin-bottom:10px">🖼 <strong>${pending} imagen${pending>1?'es':''} sin link.</strong> Pégalos para insertarlos en el Markdown.${skipped?` <span style="color:var(--t3)">· ${skipped} descartada${skipped>1?'s':''}</span>`:''}</div>`;
+    } else {
+      html += `<div class="banner banner-green" style="margin-bottom:10px">✓ Todas las imágenes activas tienen link insertado.${skipped?` <span style="color:var(--t3)">· ${skipped} descartada${skipped>1?'s':''}</span>`:''}</div>`;
+    }
+    html += '<div style="display:flex;flex-direction:column;gap:10px">';
+    S.imgs.forEach(img=>{
+      const ok=!!img.link;
+      const skippedCls=img.skipped?' skipped':'';
+      const skippedLabel=img.skipped?'RECUPERAR':'DESCARTAR';
+      const stateLabel=img.skipped?'DESCARTADA':(ok?'INSERTADO':'PENDIENTE');
+      const stateClass=img.skipped?'skip':(ok?'ok':'');
+      html += `<div class="icard${skippedCls}" id="ic3-${img.id}"><div class="ictop"><div class="icthumb">🖼</div><div class="icmeta"><div class="icid" style="display:flex;align-items:center">${img.ph}${img.page?'<span style="font-family:Space Mono,monospace;font-size:8px;background:var(--s3);border:1px solid var(--b1);color:var(--t3);padding:1px 6px;margin-left:6px">p. '+img.page+'</span>':''}</div><div class="icctx">${img.alt||'Sin descripción'}</div></div><div class="icst ${stateClass}" id="icst3-${img.id}">${stateLabel}</div><button class="icskip-btn" data-img="${img.id}" onclick="toggleSkip(${img.id})">${skippedLabel}</button></div><div class="icrow"><input class="icinp" id="il3-${img.id}" value="${img.link||''}" placeholder="https://drive.google.com/file/d/…"><button class="icapply" onclick="applyLink3(${img.id})">INSERTAR</button></div><div class="icok ${ok?'on':''}" id="iok3-${img.id}">✓ Insertado</div></div>`;
+    });
+    html += '</div></div>';
+  }
+
+  // MD blocks
+  S.blocks.forEach((b,i)=>{
+    const headerLabel = b.isUpdate ? `🔄 ${b.filename} <span style="font-family:'Space Mono',monospace;font-size:8px;background:rgba(255,140,0,.15);border:1px solid var(--orange);color:var(--orange);padding:2px 6px;margin-left:8px">UPDATE</span>` : `📄 ${b.filename}`;
+    html += `<div class="mblock"><div class="mbh"><div class="mbt">${headerLabel}</div><button class="mbc" onclick="cpBlock(${i},this)">COPIAR</button></div><pre id="pre3-${i}">${esc(b.content)}</pre></div>`;
+  });
+  wrap.innerHTML = html;
+
+  const tot=S.blocks.reduce((a,b)=>a+b.content.length,0);
+  document.getElementById('mfchars').textContent=tot.toLocaleString()+' chars · '+S.blocks.length+' archivo'+(S.blocks.length>1?'s':'');
+  // Refresh the "VER FILAS" button state
+  updateGlosarioButton();
+}
+
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function applyLink3(id){
+  const raw=document.getElementById('il3-'+id).value.trim();if(!raw)return;
+  const kind=classifyDriveLink(raw);
+  const st=document.getElementById('icst3-'+id);
+  if(kind!=='ok'){
+    st.textContent = kind==='folder' ? 'CARPETA' : 'INVÁLIDO';
+    st.className='icst err';
+    return;
+  }
+  // Canonical Drive link (not embed) — best for bot consumption
+  const link=toDriveCanonicalUrl(raw);
+  const img=S.imgs[id];const old=img.link;img.link=link;
+  S.blocks.forEach(b=>{
+    // Replace ![alt](placeholder) → alt (link)
+    b.content=b.content.replace(new RegExp('!\\['+escR(img.alt||img.ph)+'\\]\\('+escR(img.ph)+'\\)','g'),`${img.alt||img.ph} (${link})`);
+    // Remove leftover "pegar link" comment
+    b.content=b.content.replace(new RegExp('!\\['+escR(img.alt||img.ph)+'\\]\\('+escR(link)+'\\)\\s*<!-- PENDIENTE: pegar link de Drive -->','g'), `${img.alt||img.ph} (${link})`);
+    // Replace old link format if updating
+    if(old)b.content=b.content.replace(new RegExp('!\\['+escR(img.alt||img.ph)+'\\]\\('+escR(old)+'\\)','g'),`${img.alt||img.ph} (${link})`);
+    // Also handle if old format was already new style: alt (old_url)
+    if(old)b.content=b.content.replace(new RegExp(escR(img.alt||img.ph)+'\\s*\\('+escR(old)+'\\)','g'),`${img.alt||img.ph} (${link})`);
+  });
+  renderResultStep4();
+}
+function escR(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+
+function cpBlock(i,btn){
+  const text = S.blocks[i].content;
+  const success = () => {
+    btn.textContent='✓ COPIADO'; btn.classList.add('ok');
+    setTimeout(()=>{btn.textContent='COPIAR';btn.classList.remove('ok');},2500);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(success).catch(()=>{
+      if(execCopyFallback(text)) success(); else btn.textContent='✗ BLOQUEADO';
+    });
+  } else {
+    if(execCopyFallback(text)) success(); else btn.textContent='✗ BLOQUEADO';
+  }
+}
+function copyAll(){
+  const text = S.blocks.map(b=>b.content).join('\n\n---\n\n');
+  const success = () => {
+    document.querySelectorAll('.mfooter .btn-y').forEach(b=>{const orig=b.textContent;b.textContent='✓ COPIADO';setTimeout(()=>b.textContent=orig,2500);});
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(success).catch(()=>{ execCopyFallback(text) && success(); });
+  } else {
+    execCopyFallback(text) && success();
+  }
+}
+
+// GLOSARIO
+const SHEET_ID = '1yfdkoXiMPetLGouz_QU2sfxYKQkQT9DF8ODjcVdK8aA';
+
+
+function extractKW(content){
+  const m = content.match(/^KEYWORDS:\s*(.+)$/m);
+  return m ? m[1].trim() : '';
+}
+function nextReview(){
+  const d=new Date(); d.setMonth(d.getMonth()+6);
+  return d.toISOString().split('T')[0];
+}
+
+async function addToGlosario(){
+  if(!S.blocks.length){ alert('Genera el Markdown primero.'); return; }
+  return sendToGlosarioAuto(true);
+}
+
+// Genera las filas TSV para las 3 pestañas del Sheet y las muestra en un modal
+// para que el usuario las copie y pegue manualmente.
+// Called internally by runAll when MD generation completes.
+async function sendToGlosarioAuto(manual=false){
+  if(!S.blocks.length) return;
+
+  // If already generated and not explicit manual → just re-open the modal with cached rows
+  if(S._glosarioRows && !manual){
+    showGlosarioModal(S._glosarioRows.glosario, S._glosarioRows.historial, S._glosarioRows.imagenes);
+    return;
+  }
+  // Manual re-run with fresh data
+  if(S._glosarioRows && manual){
+    showGlosarioModal(S._glosarioRows.glosario, S._glosarioRows.historial, S._glosarioRows.imagenes);
+    return;
+  }
+
+  showGlosarioStatus('sending', 'Preparando filas para el Sheet…');
+
+  try{
+    const today = new Date().toISOString().split('T')[0];
+    const nextRev = nextReview();
+    const docPadre = S.file?.name || '';
+    const timestamp = new Date().toISOString();
+
+    // Generate summaries in parallel — 25s timeout per call to avoid hanging indefinitely
+    const fetchWithTimeout = (url, opts, ms=25000) => {
+      const controller = new AbortController();
+      const tid = setTimeout(()=>controller.abort(), ms);
+      return fetch(url, {...opts, signal: controller.signal}).finally(()=>clearTimeout(tid));
+    };
+    const summaries = await Promise.all(S.blocks.map(b=>
+      fetchWithTimeout('https://api.anthropic.com/v1/messages',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          model: AI_MODEL, max_tokens:200,
+          system:'Escribe un resumen de 2 frases del documento para un glosario de base de conocimiento de Brooklyn Fitboxing. Solo las 2 frases, sin introducción ni explicación.',
+          messages:[{role:'user',content:'Documento:\n'+b.content.substring(0,3000)}]
+        })
+      }).then(r=>r.json()).then(d=>(d.content||[]).map(b=>b.text||'').join('').trim())
+      .catch(()=>'') // timeout o error: resumen vacio, no bloquea
+    ));
+
+    // ─── Build rows for 3 sheets ──────────────────────────────────────────
+    // 1. Glosario: one row per MD (15 columns)
+    const glosarioRows = S.blocks.map((b, idx)=>{
+      const plan = S.plan.find(p=>p.id===b.planId);
+      const mdTitle = plan?.title || S.title;
+      const version = b.isUpdate ? '1.1' : '1.0';
+      return [
+        b.filename,
+        mdTitle,
+        S.type || '',
+        EJE_FULL[S.eje] || '',
+        S.sub || '',
+        S.owner || '',
+        S.conf || '',
+        extractKW(b.content),
+        today, version, summaries[idx] || '',
+        (EJE_FULL[S.eje]||'').toLowerCase().replace(/[^a-z0-9]/g,'-')+', '+(S.type||'').toLowerCase()+', brooklyn-brain',
+        'ACTIVO', nextRev,
+        docPadre
+      ];
+    });
+
+    // 2. Historial: one row per MD (10 columns)
+    const historialRows = S.blocks.map((b, idx)=>{
+      const plan = S.plan.find(p=>p.id===b.planId);
+      const isUpdate = b.isUpdate;
+      const overlapNote = plan?.overlapNote || '';
+      return [
+        timestamp,
+        b.filename,
+        isUpdate ? '1.1' : '1.0',
+        isUpdate ? '1.0' : '',
+        isUpdate ? 'UPDATE' : 'CREACION',
+        isUpdate
+          ? `Actualización desde ${docPadre || 'documento fuente'}${overlapNote ? ' — '+overlapNote : ''}`
+          : 'Creación inicial desde '+(docPadre || 'documento fuente'),
+        S.owner || '',
+        docPadre,
+        summaries[idx] || '',
+        'MD_GENERATOR'
+      ];
+    });
+
+    // 3. Imagenes: one row per (image, md) pair (9 columns)
+    const imagenesRows = [];
+    S.imgs.forEach(img=>{
+      const mdFilename = (img.bi >= 0 && S.blocks[img.bi]) ? S.blocks[img.bi].filename : (S.blocks[0]?.filename || '');
+      imagenesRows.push([
+        img.link ? (extractDriveFileId(img.link) || '') : '',
+        (img.alt || img.ph || '').substring(0, 200),
+        mdFilename,
+        img.ph || '',
+        img.page || '',
+        img.alt || '',
+        today,
+        docPadre,
+        img.skipped ? 'DESCARTADA' : 'ACTIVA'
+      ]);
+    });
+
+    // Cache rows on S so the button in step 4 can reopen without re-running
+    S._glosarioRows = { glosario: glosarioRows, historial: historialRows, imagenes: imagenesRows };
+    S._glosarioSent = true;
+
+    // Update the inline button in step 4 (if visible) to show count
+    updateGlosarioButton();
+
+    // If manual call → open modal immediately
+    if(manual){
+      showGlosarioModal(glosarioRows, historialRows, imagenesRows);
+    }
+    showGlosarioStatus('ok', `✓ ${glosarioRows.length} filas de Glosario listas. Pulsa VER FILAS para copiarlas.`);
+  } catch(e){
+    console.error('Glosario error:', e);
+    showGlosarioStatus('err', '⚠ Error preparando filas: '+e.message);
+    // Enable a retry button on the Step 4 button
+    updateGlosarioButton(true);
+  }
+}
+
+// Updates the "VER FILAS" button in step 4 to reflect current state
+function updateGlosarioButton(error=false){
+  const btn = document.getElementById('btn-view-rows');
+  if(!btn) return;
+  if(error){
+    btn.textContent = '⚠ REINTENTAR FILAS SHEET';
+    btn.style.background = 'var(--red)';
+    btn.style.color = '#fff';
+    btn.disabled = false;
+  } else if(S._glosarioRows){
+    const total = S._glosarioRows.glosario.length;
+    btn.textContent = `📋 VER ${total} FILA${total>1?'S':''} PARA SHEET`;
+    btn.style.background = 'var(--y)';
+    btn.style.color = '#000';
+    btn.disabled = false;
+  } else {
+    btn.textContent = '⏳ PREPARANDO FILAS…';
+    btn.style.background = 'var(--s3)';
+    btn.style.color = 'var(--t3)';
+    btn.disabled = true;
+  }
+}
+
+function showGlosarioStatus(kind, msg){
+  let banner = document.getElementById('glosario-status-banner');
+  if(!banner){
+    const wrap = document.getElementById('c5');
+    if(!wrap) return;
+    banner = document.createElement('div');
+    banner.id = 'glosario-status-banner';
+    banner.style.cssText = 'padding:9px 13px;font-size:11px;margin-bottom:14px;font-family:\'Space Mono\',monospace;border-left:3px solid;display:flex;align-items:center;gap:10px';
+    wrap.insertBefore(banner, wrap.firstChild);
+  }
+  if(kind==='sending'){
+    banner.style.color='var(--y)';
+    banner.style.borderLeftColor='var(--y)';
+    banner.style.background='rgba(255,214,0,.05)';
+    banner.innerHTML='<span style="display:inline-block;width:14px">◉</span><span>'+msg+'</span>';
+  } else if(kind==='ok'){
+    banner.style.color='var(--green)';
+    banner.style.borderLeftColor='var(--green)';
+    banner.style.background='rgba(0,212,126,.07)';
+    banner.innerHTML='<span style="display:inline-block;width:14px">✓</span><span>'+msg+'</span><button onclick="sendToGlosarioAuto(true)" style="margin-left:auto;padding:4px 10px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:\'Space Mono\',monospace;font-size:9px;cursor:pointer">VER FILAS</button>';
+  } else if(kind==='err'){
+    banner.style.color='var(--red)';
+    banner.style.borderLeftColor='var(--red)';
+    banner.style.background='rgba(255,64,64,.07)';
+    banner.innerHTML='<span style="display:inline-block;width:14px">✗</span><span>'+msg+'</span><button onclick="sendToGlosarioAuto(true)" style="margin-left:auto;padding:4px 10px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:\'Space Mono\',monospace;font-size:9px;cursor:pointer">REINTENTAR</button>';
+  }
+}
+
+// Modal with 3 tabs (Glosario / Historial / Imagenes), each with a COPY button
+// Global helper — called from the COPIAR buttons inside the modal
+// Uses a textarea + execCommand fallback, since navigator.clipboard is blocked in Claude.ai sandbox
+window.copyTabTsvFromBtn = function(btn){
+  try{
+    const tsv = decodeURIComponent(escape(atob(btn.dataset.tsv)));
+    copyTextFallback(tsv, btn);
+  }catch(e){
+    console.error('copyTabTsvFromBtn error:', e);
+    btn.textContent = '✗ ERROR';
+  }
+};
+
+// Universal copy function that works in iframes/sandboxes:
+// 1. Tries navigator.clipboard (works in Vercel, standalone browsers)
+// 2. Falls back to execCommand via hidden textarea (works in Claude.ai artifacts)
+function copyTextFallback(text, btn){
+  const orig = btn.textContent;
+  const success = () => {
+    btn.textContent = '✓ COPIADO';
+    btn.style.background = 'var(--green)';
+    setTimeout(()=>{ btn.textContent = orig; btn.style.background = 'var(--y)'; }, 2000);
+  };
+  const fail = (err) => {
+    console.error('Copy failed:', err);
+    btn.textContent = '✗ ERROR - selecciona manual';
+    btn.style.background = 'var(--red)';
+  };
+
+  // Try modern API first
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text)
+      .then(success)
+      .catch(()=>{
+        // Fallback to execCommand if the modern API is blocked
+        execCopyFallback(text) ? success() : fail('execCommand also failed');
+      });
+  } else {
+    execCopyFallback(text) ? success() : fail('no clipboard API available');
+  }
+}
+
+function execCopyFallback(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  // Position off-screen but not display:none (execCommand needs the element to be selectable)
+  ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;z-index:-1';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+function showGlosarioModal(glosarioRows, historialRows, imagenesRows){
+  document.getElementById('glosario-modal')?.remove();
+  const sheetUrl = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit';
+
+  const tabs = [
+    {
+      id: 'glosario',
+      label: 'GLOSARIO',
+      sheetName: 'Glosario',
+      headers: ['archivo','title','type','eje','subcarpeta','owner','conf','keywords','fecha','ver','resumen','tags','status','próx. revisión','doc_padre'],
+      rows: glosarioRows
+    },
+    {
+      id: 'historial',
+      label: 'HISTORIAL',
+      sheetName: 'Historial',
+      headers: ['timestamp','archivo','version','version_anterior','tipo_cambio','descripcion','autor','doc_padre','resumen','origen_cambio'],
+      rows: historialRows
+    },
+    {
+      id: 'imagenes',
+      label: 'IMÁGENES',
+      sheetName: 'Imagenes',
+      headers: ['drive_file_id','nombre_imagen','md_archivo','placeholder','pagina','descripcion','fecha_registro','doc_padre','estado'],
+      rows: imagenesRows
+    }
+  ];
+
+  const buildTsv = (rows) => rows.map(r => r.map(v => String(v||'').replace(/\t/g,' ').replace(/\n/g,' ').replace(/\r/g,'')).join('\t')).join('\n');
+
+  const buildTabContent = (tab) => {
+    if(!tab.rows.length){
+      return '<div style="padding:20px;text-align:center;color:var(--t3);font-size:12px">— Sin filas para esta pestaña —</div>';
+    }
+    const tsv = buildTsv(tab.rows);
+    // Escape the TSV for safe inclusion in an inline onclick attribute:
+    // encode to base64 and decode at runtime — avoids all quoting issues
+    const tsvB64 = btoa(unescape(encodeURIComponent(tsv)));
+    const rowsPreview = tab.rows.map((row, rIdx) => {
+      const rowCells = row.map((v,i)=>
+        '<div style="display:grid;grid-template-columns:110px 1fr;gap:8px;font-size:11px">'
+          +'<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--yd);padding-top:1px">'+tab.headers[i]+'</div>'
+          +'<div style="color:var(--t1);word-break:break-word">'+esc(String(v||'—'))+'</div></div>'
+      ).join('');
+      return (tab.rows.length > 1
+        ? '<div style="font-family:\'Space Mono\',monospace;font-size:10px;font-weight:700;color:var(--y);padding:6px 0 4px 0;border-bottom:1px solid var(--b1);margin-top:'+(rIdx?12:0)+'px">FILA '+(rIdx+1)+'</div>'
+        : '')
+        + '<div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">'+rowCells+'</div>';
+    }).join('');
+    return '<div style="margin-bottom:14px;font-size:11px;color:var(--t2);line-height:1.6">'
+      + '<strong style="color:var(--t1)">📋 Pestaña: '+tab.sheetName+'</strong><br>'
+      + 'Pulsa <strong style="color:var(--y)">COPIAR</strong>, abre el Sheet en la pestaña <code style="background:var(--s3);padding:1px 5px;color:var(--y)">'+tab.sheetName+'</code>, sitúate en la primera fila vacía de la columna A y pega con <strong style="color:var(--t1)">Ctrl+V</strong>.'
+      + '</div>'
+      + '<button data-tsv="'+tsvB64+'" onclick="copyTabTsvFromBtn(this)" style="padding:9px 16px;background:var(--y);color:#000;font-family:\'Space Mono\',monospace;font-size:11px;font-weight:700;border:none;cursor:pointer;margin-bottom:12px">📋 COPIAR '+tab.rows.length+' FILA'+(tab.rows.length>1?'S':'')+' AL PORTAPAPELES</button>'
+      + '<div style="max-height:280px;overflow-y:auto;padding:10px;background:var(--s1);border:1px solid var(--b1)">'+rowsPreview+'</div>';
+  };
+
+  const modal = document.createElement('div');
+  modal.id='glosario-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  // Build UPDATE warning if any block is an update
+  const updates = S.blocks.filter(b=>b.isUpdate);
+  const coexists = S.blocks.filter(b=>b.updateAction==='COEXISTIR' && b.updateExisting);
+  const updateWarning = (updates.length || coexists.length) ? `
+    <div style="padding:11px 14px;background:rgba(255,140,0,.07);border-left:3px solid var(--orange);font-size:11px;color:var(--orange);margin:0 22px 14px 22px;line-height:1.6;font-family:'DM Sans',sans-serif">
+      ${updates.length ? `🔄 <strong>${updates.length} MD${updates.length>1?'s':''} reemplaza${updates.length>1?'n':''} archivos existentes.</strong><br>
+      <span style="color:var(--t2)">En la pestaña <strong style="color:var(--t1)">Glosario</strong>, <strong style="color:var(--t1)">REEMPLAZA</strong> las filas existentes de: ${updates.map(b=>`<code style="background:var(--s3);padding:1px 5px;color:var(--orange)">${esc(b.filename)}</code>`).join(', ')}. En <strong style="color:var(--t1)">Historial</strong> sí se añaden como filas nuevas.</span>` : ''}
+      ${coexists.length ? `${updates.length?'<br>':''}🔀 <strong style="color:var(--blue)">${coexists.length} MD${coexists.length>1?'s':''} coexiste${coexists.length>1?'n':''} con archivos existentes</strong> — se añaden como filas NUEVAS en Glosario.` : ''}
+    </div>` : '';
+
+  const tabButtons = tabs.map((t,i) =>
+    '<button onclick="switchGlosarioTab(\''+t.id+'\')" id="gtab-'+t.id+'" class="gtab'+(i===0?' gtab-active':'')+'" style="padding:8px 14px;background:'+(i===0?'var(--s3)':'transparent')+';border:none;border-bottom:2px solid '+(i===0?'var(--y)':'transparent')+';color:'+(i===0?'var(--y)':'var(--t2)')+';font-family:\'Space Mono\',monospace;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.08em">'
+    + t.label + ' <span style="font-size:9px;opacity:.6">('+t.rows.length+')</span></button>'
+  ).join('');
+
+  const tabContents = tabs.map((t,i) =>
+    '<div id="gtabc-'+t.id+'" style="display:'+(i===0?'block':'none')+'">'+buildTabContent(t)+'</div>'
+  ).join('');
+
+  modal.innerHTML = '<div style="background:var(--s2);border:1px solid var(--b2);max-width:720px;width:100%;max-height:90vh;display:flex;flex-direction:column">'
+    +'<div style="padding:18px 22px 10px 22px;border-bottom:1px solid var(--b1)">'
+    +'<div style="font-family:\'Space Mono\',monospace;font-size:11px;font-weight:700;color:var(--y);margin-bottom:4px">+ GLOSARIO AI BRAIN</div>'
+    +'<div style="font-size:12px;color:var(--t2);line-height:1.5">Filas preparadas para las 3 pestañas del Sheet. Copia cada una y pégala en su pestaña correspondiente.</div>'
+    +'</div>'
+    + updateWarning
+    +'<div style="display:flex;border-bottom:1px solid var(--b1);padding:0 16px">'+tabButtons+'</div>'
+    +'<div style="padding:18px 22px;overflow-y:auto;flex:1">'+tabContents+'</div>'
+    +'<div style="padding:12px 22px;border-top:1px solid var(--b1);display:flex;gap:8px;align-items:center;background:var(--s1)">'
+    +'<a href="'+sheetUrl+'" target="_blank" style="padding:8px 14px;background:var(--y);color:#000;font-family:\'Space Mono\',monospace;font-size:10px;font-weight:700;text-decoration:none">ABRIR SHEET →</a>'
+    +'<button onclick="document.getElementById(\'glosario-modal\').remove()" style="padding:8px 14px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-family:\'Space Mono\',monospace;font-size:10px;cursor:pointer;margin-left:auto">CERRAR</button>'
+    +'</div></div>';
+
+  // Tab switcher
+  window.switchGlosarioTab = function(id){
+    ['glosario','historial','imagenes'].forEach(t=>{
+      const btn = document.getElementById('gtab-'+t);
+      const content = document.getElementById('gtabc-'+t);
+      const active = t===id;
+      if(btn){
+        btn.style.background = active ? 'var(--s3)' : 'transparent';
+        btn.style.borderBottomColor = active ? 'var(--y)' : 'transparent';
+        btn.style.color = active ? 'var(--y)' : 'var(--t2)';
+      }
+      if(content) content.style.display = active ? 'block' : 'none';
+    });
+  };
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+}
+
+
+function resetAll(){
+  Object.assign(S,{file:null,text:null,type:null,title:'',owner:'',conf:null,eje:null,sub:'',proposal:null,propIdx:0,propAlt:0,blocks:[],imgs:[],plan:[],planRationale:'',locReason:'',contextMds:[],_pdfBase64:null,_textReady:null,_glosarioRows:null,_glosarioSent:false,_pdfScanPending:false});
+  document.getElementById('fpill').classList.remove('on');
+  document.getElementById('drop').style.display='';
+  document.getElementById('file-input').value='';
+  document.getElementById('tinp').value='';
+  document.querySelectorAll('#owner-grid .cbtn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('pfx').textContent='???_';
+  document.getElementById('fprev').classList.remove('on');
+  
+  // Clear context MDs UI
+  const ctxInput=document.getElementById('ctx-input');
+  if(ctxInput) ctxInput.value='';
+  const ctxList=document.getElementById('ctx-list');
+  if(ctxList) ctxList.innerHTML='';
+  document.querySelectorAll('.tbtn,.cbtn').forEach(b=>b.classList.remove('sel'));
+  ['conf-btn-internal','conf-btn-both'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.style.borderColor='var(--b1)';el.style.background='var(--s2)';}
+  });
+  ['conf-lbl-internal','conf-lbl-both'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.color='var(--t3)';
+  });
+  document.getElementById('conf-value').textContent='sin seleccionar';
+  document.getElementById('btn1').disabled=true;
+  const imgStep2=document.getElementById('img-step2');
+  if(imgStep2) imgStep2.style.display='none';
+  ['stab-2','stab-3','stab-4','stab-5'].forEach(id=>document.getElementById(id)?.classList.add('locked'));
+  // Clear result area
+  const c3=document.getElementById('c5');
+  if(c3) c3.innerHTML='<div class="empty"><div class="empty-ico">⏳</div><div class="empty-t">Sin resultado</div><div class="empty-s">Vuelve al paso anterior y genera los Markdowns.</div></div>';
+  const genList=document.getElementById('gen-list');
+  if(genList) genList.innerHTML='';
+  const planList=document.getElementById('plan-list');
+  if(planList) planList.innerHTML='';
+  document.getElementById('mfchars').textContent='';
+  goStep(1);
+}
+</script>
+
+</body>
+</html>
