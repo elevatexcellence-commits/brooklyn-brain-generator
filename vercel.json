@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "vercel/functions/auth/*.js": {
+      "memory": 512,
+      "maxDuration": 10
+    }
+  }
+}
